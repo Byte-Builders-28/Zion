@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from middleware.interceptor import log_buffer
+from middleware.interceptor import log_queue
 import pandas as pd
 
 router = APIRouter(prefix="/anomalies", tags=["Anomalies"])
@@ -7,10 +7,10 @@ router = APIRouter(prefix="/anomalies", tags=["Anomalies"])
 
 @router.get("/")
 def get_anomalies():
-    if not log_buffer:
+    if not log_queue:
         return {"msg": "no data"}
 
-    df = pd.DataFrame(log_buffer)
+    df = pd.DataFrame(log_queue)
 
     counts = df.groupby("ip").size()
     suspicious = counts[counts > 20]

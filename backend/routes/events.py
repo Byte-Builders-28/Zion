@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from middleware.interceptor import log_buffer
+from middleware.interceptor import log_queue
 import pandas as pd
 
 router = APIRouter(prefix="/events", tags=["Events"])
@@ -7,10 +7,10 @@ router = APIRouter(prefix="/events", tags=["Events"])
 
 @router.get("/run-detection")
 def run_detection():
-    if not log_buffer:
+    if not log_queue:
         return {"msg": "no data"}
 
-    df = pd.DataFrame(log_buffer)
+    df = pd.DataFrame(log_queue)
 
     counts = df.groupby("ip").size()
 
@@ -24,5 +24,5 @@ def run_detection():
 
 @router.post("/clear-logs")
 def clear_logs():
-    log_buffer.clear()
+    log_queue.clear()
     return {"msg": "logs cleared"}
