@@ -22,6 +22,10 @@ body {
   min-height: 100vh;
 }
 
+#root {
+  min-height: 100vh;
+}
+
 /* Utilities */
 .bg-black { background-color: var(--black); }
 .bg-green-900 { background-color: var(--green-900); }
@@ -141,4 +145,92 @@ body {
   60% { clip: rect(30px, 9999px, 50px, 0); }
   80% { clip: rect(80px, 9999px, 20px, 0); }
   100% { clip: rect(40px, 9999px, 70px, 0); }
+}
+
+.zion-shell {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, rgba(0, 40, 0, 0.6), #010a05 60%);
+  color: var(--green-500);
+}
+
+.zion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid var(--green-800);
+  background: rgba(0, 5, 0, 0.85);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(6px);
+}
+
+.zion-brand {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-decoration: none;
+  color: var(--green-500);
+}
+
+.zion-nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-link {
+  padding: 0.45rem 1rem;
+  border: 1px solid transparent;
+  color: var(--green-700);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: border 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--green-400);
+  border-color: var(--green-800);
+}
+
+.nav-link.is-active {
+  color: var(--green-100);
+  border-color: var(--green-500);
+  background: rgba(0, 50, 0, 0.6);
+}
+
+.page-section {
+  min-height: calc(100vh - 82px);
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+  transition: background 0.5s ease;
+}
+
+.page-generic {
+  background: linear-gradient(135deg, rgba(0, 40, 0, 0.35), rgba(0, 0, 0, 0.65));
+}
+
+.page-dashboard {
+  background: radial-gradient(circle at 20% 20%, rgba(0, 50, 0, 0.3), transparent 45%),
+              radial-gradient(circle at 80% 0%, rgba(0, 30, 0, 0.35), transparent 40%),
+              #040c06;
+}
+
+.page-simulation {
+  background: linear-gradient(160deg, rgba(10, 30, 10, 0.2), rgba(2, 8, 5, 0.85));
+}
+
+.page-threats {
+  background: linear-gradient(120deg, rgba(0, 25, 10, 0.25), rgba(0, 0, 0, 0.8));
+}
+
+.page-policies {
+  background: radial-gradient(circle at center, rgba(0, 35, 5, 0.25), rgba(0, 0, 0, 0.85));
+}
+
+.page-section .border {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.zion-nav .nav-link::first-letter {
+  color: var(--green-400);
 }
