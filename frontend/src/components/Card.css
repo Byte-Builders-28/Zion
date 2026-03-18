@@ -6,7 +6,7 @@
   border-radius: 12px;
   padding: 2rem;
   transition: all 0.3s ease;
-  cursor: pointer;
+  cursor: default;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -30,13 +30,17 @@
   transition: opacity 0.3s ease;
 }
 
-.matrix-card:hover {
+.matrix-card--interactive {
+  cursor: pointer;
+}
+
+.matrix-card--interactive:hover {
   transform: translateY(-5px);
   border-color: rgba(0, 255, 0, 0.6);
   box-shadow: 0 8px 32px rgba(0, 255, 0, 0.2);
 }
 
-.matrix-card:hover::before {
+.matrix-card--interactive:hover::before {
   opacity: 1;
 }
 

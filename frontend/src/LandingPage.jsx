@@ -1,25 +1,31 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import MatrixRain from './components/MatrixRain';
 import Card from './components/Card';
 import './LandingPage.css';
 
 const LandingPage = () => {
+  const navigate = useNavigate();
   const cards = [
     {
       title: 'Dashboard',
-      description: 'System overview and core metrics.'
+      description: 'System overview and core metrics.',
+      page: '/dashboard'
     },
     {
       title: 'Privacy Policy',
-      description: 'Data protection and security protocols.'
+      description: 'Data protection and security protocols.',
+      page: '/policies'
     },
     {
       title: 'Incident Log',
-      description: 'Real-time threat detection history.'
+      description: 'Real-time threat detection history.',
+      page: '/threats'
     },
     {
       title: 'Attack simulation',
-      description: 'Vulnerability assessment and stress testing.'
+      description: 'Vulnerability assessment and stress testing.',
+      page: '/simulation'
     }
   ];
 
@@ -38,6 +44,7 @@ const LandingPage = () => {
             key={index}
             title={card.title}
             description={card.description}
+            onClick={() => navigate(card.page)}
           />
         ))}
       </main>
