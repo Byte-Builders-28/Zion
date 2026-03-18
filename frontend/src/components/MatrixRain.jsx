@@ -15,8 +15,8 @@ const MatrixRain = () => {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Matrix characters
-    const text = 'abcdefghijklmnopqrstuvwxyz0123456789$+-*/=%""\'#&_(),.;:?!\\|{}<>[]^~';
+    // Matrix characters (Katakana + Latin + Numerals)
+    const text = 'ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const matrix = text.split('');
 
     const fontSize = 16;
@@ -25,24 +25,29 @@ const MatrixRain = () => {
     // Array of drops - one per column
     const drops = [];
     for (let x = 0; x < columns; x++) {
-      drops[x] = 1;
+      drops[x] = Math.random() * -100; // Start at random positions above screen
     }
 
     // Drawing the characters
     const draw = () => {
-      // Black background with 0.05 opacity to create trail effect
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      // Black background with slightly stronger opacity for better trailing
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = '#0F0'; // Green text
       ctx.font = fontSize + 'px monospace';
 
       for (let i = 0; i < drops.length; i++) {
-        // Random character
-        const char = matrix[Math.floor(Math.random() * matrix.length)];
+        // Random characters
+        const charHead = matrix[Math.floor(Math.random() * matrix.length)];
+        const charTail = matrix[Math.floor(Math.random() * matrix.length)];
         
-        // x = i*fontSize, y = value of drops[i]*fontSize
-        ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+        // Draw the tail character in green
+        ctx.fillStyle = '#0F0';
+        ctx.fillText(charTail, i * fontSize, (drops[i] - 1) * fontSize);
+
+        // Draw the head character in white for the glowing falling effect
+        ctx.fillStyle = '#FFF';
+        ctx.fillText(charHead, i * fontSize, drops[i] * fontSize);
 
         // Sending the drop back to the top randomly after it has crossed the screen
         if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
