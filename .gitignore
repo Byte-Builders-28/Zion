@@ -1,0 +1,19 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+
+# Dotenv
+.env
+backend/.env
+
+# VS Code
+.vscode/
+
+address.txt  UYRYPWXJBRLVXN3QHDMT43FWEFIVPNDBSFDTGUFOBM5IRUSJ2XEHXIWU7A
