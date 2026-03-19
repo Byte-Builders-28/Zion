@@ -13,24 +13,61 @@
   text-align: center;
   margin-bottom: 2rem;
   margin-top: 10vh;
-  flex-grow: 1;
+  padding: 4rem 2rem;
+  background: rgba(0, 5, 0, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 255, 0, 0.2);
+  border-radius: 24px;
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.9),
+    inset 0 0 30px rgba(0, 255, 0, 0.1);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  max-width: 900px;
+  width: 95%;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  z-index: 10;
+  animation: panelFadeIn 1s ease-out;
+}
+
+@keyframes panelFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .glitch {
-  font-size: 5rem;
-  font-weight: bold;
+  font-size: 6rem;
+  font-weight: 900;
   text-transform: uppercase;
   position: relative;
-  text-shadow: 0.05em 0 0 rgba(255, 0, 0, 0.75),
+  color: #0f0;
+  text-shadow: 
+    0 0 10px rgba(0, 255, 0, 0.5),
+    0.05em 0 0 rgba(255, 0, 0, 0.75),
     -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
     0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
   animation: glitch 500ms infinite;
   margin: 0;
-  letter-spacing: 12px;
+  letter-spacing: 16px;
+  filter: drop-shadow(0 0 15px rgba(0, 255, 0, 0.3));
+}
+
+.subtitle {
+  color: #aaddaa;
+  font-size: 1.2rem;
+  margin-top: 1rem;
+  letter-spacing: 1px;
 }
 
 .get-started-btn {
@@ -73,30 +110,22 @@
   left: 100%;
 }
 
+.nav-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding: 2rem 0;
+  z-index: 5;
+}
+
 .bottom-nav {
   display: flex;
   justify-content: center;
-  gap: 3rem;
-  margin-bottom: 2rem;
+  gap: 2rem;
   padding: 1rem;
-}
-
-.nav-item {
-  background: transparent;
-  border: none;
-  color: #aaddaa;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid transparent;
-}
-
-.nav-item:hover {
-  color: #0f0;
-  border-bottom: 1px solid #0f0;
-  text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+  width: 100%;
+  max-width: 1200px;
 }
 
 .landing-footer {

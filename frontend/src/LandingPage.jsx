@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import MatrixRain from './components/MatrixRain';
-import Card from './components/Card';
+import TiltCard from './components/TiltCard';
 import './LandingPage.css';
 
 const LandingPage = () => {
@@ -42,17 +42,17 @@ const LandingPage = () => {
         </button>
       </header>
 
-      <nav className="bottom-nav">
-        {cards.map((card, index) => (
-          <button 
-            key={index}
-            className="nav-item"
-            onClick={() => navigate(card.page)}
-          >
-            <span className="nav-text">{card.title}</span>
-          </button>
-        ))}
-      </nav>
+      <div className="nav-wrapper">
+        <nav className="bottom-nav">
+          {cards.map((card, index) => (
+            <TiltCard 
+              key={index}
+              title={card.title}
+              onClick={() => navigate(card.page)}
+            />
+          ))}
+        </nav>
+      </div>
 
       <footer className="landing-footer">
         <p>V 1.0.0 // MATRIX PROTOCOL</p>
