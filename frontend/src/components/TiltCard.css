@@ -1,0 +1,73 @@
+.tilt-card {
+  position: relative;
+  width: 220px;
+  height: 120px;
+  background: rgba(0, 255, 0, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 255, 0, 0.2);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 0.1s ease-out, box-shadow 0.3s ease;
+  transform-style: preserve-3d;
+  transform: perspective(1000px) rotateX(var(--rotateX, 0deg)) rotateY(var(--rotateY, 0deg));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.tilt-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.tilt-card:hover {
+  border-color: rgba(0, 255, 0, 0.6);
+  box-shadow: 0 10px 30px rgba(0, 255, 0, 0.2);
+}
+
+.tilt-card:hover::before {
+  opacity: 1;
+}
+
+.tilt-card-content {
+  transform: translateZ(40px); /* Lift text off the card surface */
+  width: 100%;
+  padding: 1rem;
+  text-align: center;
+}
+
+.tilt-card-text {
+  color: #0f0;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+}
+
+.tilt-card-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(0, 255, 0, 0.2),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.tilt-card:hover .tilt-card-glow {
+  opacity: 1;
+}
