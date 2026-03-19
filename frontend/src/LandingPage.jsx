@@ -34,20 +34,25 @@ const LandingPage = () => {
       <MatrixRain />
       
       <header className="landing-header">
-        <h1 className="glitch" data-text="SYSTEM TERMINAL">SYSTEM TERMINAL</h1>
+        <h1 className="glitch" data-text="ZION">ZION</h1>
         <p className="subtitle">Secure connection established.</p>
+        <button className="get-started-btn" onClick={() => navigate('/dashboard')}>
+          GET STARTED
+          <span className="btn-glow"></span>
+        </button>
       </header>
 
-      <main className="cards-grid">
+      <nav className="bottom-nav">
         {cards.map((card, index) => (
-          <Card 
+          <button 
             key={index}
-            title={card.title}
-            description={card.description}
+            className="nav-item"
             onClick={() => navigate(card.page)}
-          />
+          >
+            <span className="nav-text">{card.title}</span>
+          </button>
         ))}
-      </main>
+      </nav>
 
       <footer className="landing-footer">
         <p>V 1.0.0 // MATRIX PROTOCOL</p>

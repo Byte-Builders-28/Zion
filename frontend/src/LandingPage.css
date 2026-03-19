@@ -11,12 +11,17 @@
 
 .landing-header {
   text-align: center;
-  margin-bottom: 4rem;
-  margin-top: 2rem;
+  margin-bottom: 2rem;
+  margin-top: 10vh;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .glitch {
-  font-size: 3rem;
+  font-size: 5rem;
   font-weight: bold;
   text-transform: uppercase;
   position: relative;
@@ -25,39 +30,80 @@
     0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
   animation: glitch 500ms infinite;
   margin: 0;
-  letter-spacing: 2px;
+  letter-spacing: 12px;
 }
 
-.glitch span {
+.get-started-btn {
+  margin-top: 3rem;
+  padding: 1rem 3rem;
+  background: transparent;
+  border: 1px solid #0f0;
+  color: #0f0;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.5rem;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  letter-spacing: 4px;
+}
+
+.get-started-btn:hover {
+  background: rgba(0, 255, 0, 0.1);
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+  text-shadow: 0 0 8px #0f0;
+}
+
+.btn-glow {
   position: absolute;
   top: 0;
-  left: 0;
-}
-
-.subtitle {
-  color: #aaddaa;
-  font-size: 1.2rem;
-  margin-top: 1rem;
-  letter-spacing: 1px;
-}
-
-.cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  left: -100%;
   width: 100%;
-  flex-grow: 1;
-  align-content: center;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 255, 0, 0.2),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.get-started-btn:hover .btn-glow {
+  left: 100%;
+}
+
+.bottom-nav {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+}
+
+.nav-item {
+  background: transparent;
+  border: none;
+  color: #aaddaa;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid transparent;
+}
+
+.nav-item:hover {
+  color: #0f0;
+  border-bottom: 1px solid #0f0;
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
 }
 
 .landing-footer {
   text-align: center;
-  margin-top: 4rem;
   padding-bottom: 1rem;
   color: #055005;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   letter-spacing: 2px;
 }
 
