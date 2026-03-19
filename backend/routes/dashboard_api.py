@@ -52,3 +52,9 @@ def endpoint_stats():
     return {
         "endpoint_usage": endpoints.to_dict()
     }
+
+
+@router.get("/raw_logs")
+def get_raw_logs():
+    return queue_to_list()
+

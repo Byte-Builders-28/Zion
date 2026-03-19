@@ -1,10 +1,15 @@
-import pickle, numpy as np
-from feature_extractor import extract, FEATURES
+import pickle, os, numpy as np
+from ml.feature_extractor import extract, FEATURES
 
-with open("models/isolation_forest.pkl", "rb") as f:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "models", "isolation_forest.pkl")
+
+with open(MODEL_PATH, "rb") as f:
     _bundle = pickle.load(f)
 _model  = _bundle["model"]
 _scaler = _bundle["scaler"]
+_min_score = _bundle.get("min_score", -0.1)
+_max_score = _bundle.get("max_score", 0.05)
 
 _score_history = []
 
@@ -25,19 +30,26 @@ def score_request(request: dict) -> dict:
     raw_score = _model.decision_function(X_scaled)[0]
     _score_history.append(raw_score)
 
-    mn, mx = min(_score_history), max(_score_history)
+    mn, mx = _min_score, _max_score
+    
+    # Clip raw_score to mn/mx bounds to keep risk between 0 and 1
+    raw_score_clipped = max(min(raw_score, mx), mn)
+    
     if mx == mn:
         risk = 0.5
     else:
-        risk = 1 - (raw_score - mn) / (mx - mn)
+        risk = 1 - (raw_score_clipped - mn) / (mx - mn)
 
     threat_type = _classify_threat(features)
 
     return {
-        "risk_score": round(risk, 3),
-        "threat_type": threat_type,
-        "features": dict(zip(FEATURES, features)),
-        "flag": risk > 0.75
+        "risk_score": float(round(risk, 3)),
+        "threat_type": str(threat_type),
+        "features": {str(k): float(v) for k, v in zip(FEATURES, features)},
+        "flag": bool(risk > 0.50) or (threat_type != "anomaly"),
+        "raw_score": float(raw_score),
+        "mn": float(mn),
+        "mx": float(mx)
     }
 
 def _classify_threat(features: list) -> str:

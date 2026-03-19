@@ -19,15 +19,10 @@ def train():
 
     model = IsolationForest(
         n_estimators=100,
-        contamination=0.05,  # let it 5% anomalies in real traffic (testing )
+        contamination=0.001,  # lowered contamination to catch more anomalies
         random_state=42
     )
     model.fit(X_scaled)
-
-    # Save both model and scaler
-    os.makedirs("models", exist_ok=True)
-    with open("models/isolation_forest.pkl", "wb") as f:
-        pickle.dump({"model": model, "scaler": scaler}, f)
 
     # Quick evaluation on full data
     X_all = df[FEATURES].values
@@ -36,6 +31,16 @@ def train():
 
     # Normalize to 0–1 risk score (1 = most suspicious)
     risk = 1 - (scores - scores.min()) / (scores.max() - scores.min())
+
+    # Save both model, scaler, and bounds
+    os.makedirs("models", exist_ok=True)
+    with open("models/isolation_forest.pkl", "wb") as f:
+        pickle.dump({
+            "model": model, 
+            "scaler": scaler,
+            "min_score": float(scores.min()),
+            "max_score": float(scores.max())
+        }, f)
 
     normal_risk = risk[:len(normal)].mean()
     attack_risk = risk[len(normal):].mean()

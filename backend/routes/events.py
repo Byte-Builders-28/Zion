@@ -24,5 +24,6 @@ def run_detection():
 
 @router.post("/clear-logs")
 def clear_logs():
-    log_queue.clear()
+    with log_queue.mutex:
+        log_queue.queue.clear()
     return {"msg": "logs cleared"}
