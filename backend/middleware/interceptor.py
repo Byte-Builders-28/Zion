@@ -1,5 +1,6 @@
 import time
-from fastapi import Request
+from fastapi import Request, BackgroundTasks
+import asyncio
 from queue import Queue
 from ml.detector import score_request
 from policy.smolify_client import generate_policy
@@ -7,6 +8,32 @@ from blockchain.algorand_logger import log_incident
 
 log_queue = Queue(maxsize=10000)  # prevent memory overflow
 
+last_alert_time = 0
+
+def background_threat_handler(score_result: dict, log_data: dict):
+    global last_alert_time
+    # Only send to blockchain once every 10 seconds to avoid spamming the testnet API
+    if time.time() - last_alert_time < 10:
+        return
+    last_alert_time = time.time()
+    
+    try:
+        policy = generate_policy({
+            "threat_type": score_result.get("threat_type"),
+            "endpoint": log_data["endpoint"],
+            "ip": log_data["ip"],
+            "risk_score": score_result.get("risk_score")
+        })
+        log_incident({
+            "id": str(int(time.time()*1000)),
+            "type": score_result.get("threat_type"),
+            "endpoint": log_data["endpoint"],
+            "ip": log_data["ip"],
+            "risk": score_result.get("risk_score"),
+            "policy": policy.get("rule_name", "unknown")
+        })
+    except Exception as e:
+        print(f"[Threat Handler Error] {e}")
 
 def add_log(data: dict):
     try:
@@ -43,23 +70,12 @@ async def interceptor(request: Request, call_next):
     try:
         score_result = score_request(log_data)
         log_data["score_result"] = score_result
+        print(f"[Interceptor] Score: {score_result['risk_score']} | Flag: {score_result['flag']} | Type: {score_result['threat_type']}")
         
         # If threat exists, generate policy and log
         if score_result.get("flag"):
-            policy = generate_policy({
-                "threat_type": score_result.get("threat_type"),
-                "endpoint": log_data["endpoint"],
-                "ip": log_data["ip"],
-                "risk_score": score_result.get("risk_score")
-            })
-            log_incident({
-                "id": str(int(time.time()*1000)),
-                "type": score_result.get("threat_type"),
-                "endpoint": log_data["endpoint"],
-                "ip": log_data["ip"],
-                "risk": score_result.get("risk_score"),
-                "policy": policy.get("rule_name", "unknown")
-            })
+            # run the slow blockchain logging in background so it doesn't block the request
+            asyncio.create_task(asyncio.to_thread(background_threat_handler, score_result, log_data))
             
     except Exception as e:
         print(f"[Interceptor Error] Threat scoring failed: {e}")

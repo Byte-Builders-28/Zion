@@ -25,6 +25,15 @@ def test():
     return {"msg": "hit"}
 
 
+@app.post("/login")
+def login(creds: dict):
+    # Always fail login for attack simulation to trigger 401s
+    if creds.get("password") == "correct_password":
+        return {"msg": "success"}
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=401, content={"msg": "Unauthorized"})
+
+
 def run():
     mode = sys.argv[1].lower() if len(sys.argv) > 1 else "debug"
 

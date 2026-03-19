@@ -3,14 +3,14 @@ import time
 import concurrent.futures
 import sys
 
-URL = "http://127.0.0.1:8000/test"
+URL = "http://127.0.0.1:8000/login"
 TOKEN = "eyJhbGc.stolen.token.123"
 
 def send_request(i):
     headers = {"Authorization": f"Bearer {TOKEN}"}
     payload = {"user": "admin", "password": f"pass{i}"}
     try:
-        resp = requests.post(f"{URL}?simulate=login", headers=headers, json=payload, timeout=5)
+        resp = requests.post(URL, headers=headers, json=payload, timeout=5)
         return i, resp.status_code, None
     except Exception as e:
         return i, None, str(e)

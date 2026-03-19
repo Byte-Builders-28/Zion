@@ -7,13 +7,13 @@ def generate_normal(n=500):
     rows = []
     for _ in range(n):
         rows.append({
-            "requests_per_min":  random.randint(1, 15),
+            "requests_per_min":  random.randint(1, 40),
             "unique_ips":          random.randint(1, 2),
             "failed_logins":       random.randint(0, 2),
-            "payload_size_bytes":  random.randint(100, 800),
+            "payload_size_bytes":  random.randint(0, 800),
             "token_reuse_count":   random.randint(0, 1),
             "endpoint_variety":    random.randint(1, 5),
-            "hour_of_day":         random.randint(8, 22),
+            "hour_of_day":         random.randint(0, 23),
             "label": 0   # 0 = normal 
         })
     return pd.DataFrame(rows)
