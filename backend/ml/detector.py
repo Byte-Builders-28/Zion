@@ -1,7 +1,10 @@
-import pickle, numpy as np
-from feature_extractor import extract, FEATURES
+import pickle, os, numpy as np
+from ml.feature_extractor import extract, FEATURES
 
-with open("models/isolation_forest.pkl", "rb") as f:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "models", "isolation_forest.pkl")
+
+with open(MODEL_PATH, "rb") as f:
     _bundle = pickle.load(f)
 _model  = _bundle["model"]
 _scaler = _bundle["scaler"]
