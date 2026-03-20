@@ -1,68 +1,106 @@
 import React from 'react';
+import './pages.css';
 
 const Dashboard = () => {
+  const stats = [
+    { value: '1,284', label: 'THREATS DETECTED', color: '#0f0' },
+    { value: '12',    label: 'CRITICAL ACTIVE',  color: '#f55' },
+    { value: '0.14',  label: 'AVG RISK SCORE',   color: '#ff0' },
+    { value: '42',    label: 'IPs BLOCKED',       color: '#0af' }
+  ];
+
+  const threats = [
+    { type: 'token_replay',  path: '/login',       risk: '0.96', level: 'CRITICAL' },
+    { type: 'rate_limit',    path: '/api/v1/user', risk: '0.72', level: 'HIGH' },
+    { type: 'brute_force',   path: '/auth',        risk: '0.88', level: 'CRITICAL' },
+    { type: 'unusual_geo',   path: '/dashboard',   risk: '0.45', level: 'MED' }
+  ];
+
+  const attacks = [
+    { name: 'SQL Injection',        pct: 65, cls: '' },
+    { name: 'Cross-Site Scripting', pct: 48, cls: '' },
+    { name: 'DDoS Attempt',         pct: 33, cls: 'prog-fill-red' },
+    { name: 'Brute Force',          pct: 24, cls: 'prog-fill-blue' }
+  ];
+
+  const levelClass = l =>
+    l === 'CRITICAL' ? 'badge-red' : l === 'HIGH' ? 'badge-yellow' : 'badge-blue';
+
   return (
-    <div className="p-6">
-      <h2 className="text-xl mb-4 text-green-500">// ZION COMMAND CENTER -- REAL-TIME THREAT OVERVIEW</h2>
-      
-      {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="border border-green-800 p-4 bg-black">
-          <div className="text-3xl text-green-500">0</div>
-          <div className="text-xs text-green-800">THREATS DETECTED</div>
-        </div>
-        <div className="border border-green-800 p-4 bg-black">
-          <div className="text-3xl text-red-500">0</div>
-          <div className="text-xs text-green-800">CRITICAL ACTIVE</div>
-        </div>
-        <div className="border border-green-800 p-4 bg-black">
-          <div className="text-3xl text-yellow-500">0.00</div>
-          <div className="text-xs text-green-800">AVG RISK SCORE</div>
-        </div>
-        <div className="border border-green-800 p-4 bg-black">
-          <div className="text-3xl text-blue-500">0</div>
-          <div className="text-xs text-green-800">IPs BLOCKED</div>
-        </div>
+    <div className="pop-in" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
+      <h2 className="page-title">// ZION COMMAND CENTER — REAL-TIME THREAT OVERVIEW</h2>
+
+      {/* ── Stat Cards ── */}
+      <div className="dashboard-stat-grid">
+        {stats.map((s, i) => (
+          <div key={i} className="dashboard-stat-card scan-edge">
+            <div className="stat-value" style={{ color: s.color }}>{s.value}</div>
+            <div className="stat-label"  style={{ color: s.color }}>{s.label}</div>
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
-        {/* Left Column */}
-        <div className="space-y-6">
-          <div className="border border-green-800 p-4 bg-black h-64">
-             <h3 className="text-green-700 text-sm mb-2">LIVE TRAFFIC -- REQUESTS/MIN</h3>
-             {/* Chart Placeholder */}
-             <div className="h-full flex items-end justify-between px-2 pb-2">
-                 <div className="w-full text-center text-green-900 text-xs">Chart Visualization Loading...</div>
-             </div>
+      {/* ── Main two-column grid ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+
+        {/* Left */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+          <div className="glass-panel" style={{ minHeight: '210px' }}>
+            <div className="panel-title">LIVE TRAFFIC — REQUESTS / MIN</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '130px' }}>
+              <span style={{ fontFamily: 'Share Tech Mono', fontSize: '0.78rem', color: 'rgba(0,255,0,0.35)', letterSpacing: '2px' }}>
+                [ SYSTEM ANALYZING TRAFFIC DATA... ]
+              </span>
+            </div>
           </div>
-          
-          <div className="border border-green-800 p-4 bg-black h-48">
-              <h3 className="text-green-700 text-sm mb-2">ATTACK TYPE BREAKDOWN</h3>
-              {/* Progress bars placeholder */}
+
+          <div className="glass-panel">
+            <div className="panel-title">ATTACK TYPE BREAKDOWN</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {attacks.map((a, i) => (
+                <div key={i}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Share Tech Mono', fontSize: '0.72rem', color: 'rgba(0,255,0,0.7)', marginBottom: '4px' }}>
+                    <span>{a.name}</span><span>{a.pct}%</span>
+                  </div>
+                  <div className="prog-track">
+                    <div className={`prog-fill ${a.cls}`} style={{ width: `${a.pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          <div className="border border-green-800 p-4 bg-black h-64">
-            <h3 className="text-green-700 text-sm mb-2">ACTIVE THREAT FEED</h3>
-             <div className="text-xs font-mono space-y-2">
-                <div className="flex justify-between">
-                    <span className="text-green-400">token_replay</span>
-                    <span className="text-green-600">/login</span>
-                    <span className="text-red-500 border border-red-900 px-1">CRITICAL 0.96</span>
+        {/* Right */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+          <div className="glass-panel" style={{ minHeight: '210px' }}>
+            <div className="panel-title">ACTIVE THREAT FEED</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', overflowY: 'auto', maxHeight: '150px' }}>
+              {threats.map((t, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,255,0,0.06)', paddingBottom: '0.45rem', fontFamily: 'Share Tech Mono', fontSize: '0.73rem' }}>
+                  <span style={{ color: '#0f0', width: '110px', flexShrink: 0 }}>{t.type}</span>
+                  <span style={{ color: 'rgba(0,255,0,0.45)', flex: 1, padding: '0 0.5rem' }}>{t.path}</span>
+                  <span className={`badge ${levelClass(t.level)}`}>{t.level} {t.risk}</span>
                 </div>
-                {/* More items */}
-             </div>
+              ))}
+            </div>
           </div>
 
-          <div className="border border-green-800 p-4 bg-black h-48">
-             <h3 className="text-green-700 text-sm mb-2">SYSTEM LOG</h3>
-             <div className="text-xs font-mono space-y-1 text-green-600">
-                <div>00:00:01 [INIT] Zion defense layers armed</div>
-                <div>00:00:04 [ML] Isolation Forest loaded</div>
-             </div>
+          <div className="glass-panel">
+            <div className="panel-title">SYSTEM LOG</div>
+            <div style={{ fontFamily: 'Share Tech Mono', fontSize: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', color: 'rgba(0,255,0,0.55)' }}>
+              {[
+                '[00:00:01] INITIALIZING ZION CORE...',
+                '[00:00:02] DEFENSE LAYERS ARMED',
+                '[00:00:04] ML-MODEL: ISOLATION FOREST LOADED',
+                '[00:00:05] MONITORING TRAFFIC ON PORT 80/443',
+              ].map((l, i) => <div key={i}>{l}</div>)}
+              <div style={{ color: '#0f0', marginTop: '4px' }}>▌ SYSTEM STANDBY...</div>
+            </div>
           </div>
+
         </div>
       </div>
     </div>
