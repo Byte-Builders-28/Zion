@@ -1,4 +1,4 @@
-﻿import os
+import os
 
 from dotenv import load_dotenv
 
@@ -23,7 +23,7 @@ client.set_project(PROJECT_ID)
 client.set_key(API_KEY)
 
 db = TablesDB(client)
-
+_active_policies = []
 
 def save_chain_record(record: dict):
     "Called after Algorand confirms TX — saves to Appwrite"
@@ -73,3 +73,12 @@ def fetch_chain_records(limit=20) -> list:
         }
         for d in res["rows"]
     ]
+
+def add_policy(policy: dict):
+    _active_policies.append(policy)
+
+def count_active_policies() -> int:
+    return len(_active_policies)
+
+def clear_policies():
+    _active_policies.clear()

@@ -2,6 +2,18 @@ import json
 import requests
 import os
 
+REQUIRED_KEYS = ["rule_name", "action", "threshold", "severity", "affected_endpoint"]
+
+
+def _ensure_valid_policy(policy: dict, fallback: dict) -> dict:
+    """Return fallback if the API payload is missing required fields."""
+    if not isinstance(policy, dict):
+        return fallback
+    for key in REQUIRED_KEYS:
+        if policy.get(key) is None:
+            return fallback
+    return policy
+
 def generate_policy(threat_report: dict) -> dict:
     """
     Calls the Smallify AI API with a structured prompt.
@@ -39,20 +51,24 @@ def generate_policy(threat_report: dict) -> dict:
     
     # We will try a dummy/mock URL or return the fallback if we don't know the exact endpoint.
     # Replace this with the actual Smallify AI API endpoint.
-    api_url = os.getenv("SMALLIFY_API_URL", "http://localhost:8000/api/generate_policy")
+    # api_url = os.getenv("SMALLIFY_API_URL", "http://localhost:8000/api/generate_policy")
     
-    try:
-        response = requests.post(api_url, json={"prompt": prompt}, timeout=5)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.Timeout:
-        print(f"[Smolify Warning] API Timeout. Using fallback policy for {threat_type}.")
-    except requests.exceptions.ConnectionError:
-        print(f"[Smolify Warning] API Unreachable. Using fallback policy for {threat_type}.")
-    except json.JSONDecodeError:
-        print(f"[Smolify Error] Invalid JSON received from API. Using fallback.")
-    except Exception as e:
-        print(f"[Smolify Error] Unexpected error: {e}")
+    # try:
+    #     response = requests.post(api_url, json={"prompt": prompt}, timeout=5)
+    #     response.raise_for_status()
+    #     policy = response.json()
+    #     return _ensure_valid_policy(policy, fallback_response)
+    # except requests.exceptions.Timeout:
+    #     print(f"[Smolify Warning] API Timeout. Using fallback policy for {threat_type}.")
+    # except requests.exceptions.ConnectionError:
+    #     print(f"[Smolify Warning] API Unreachable. Using fallback policy for {threat_type}.")
+    # except json.JSONDecodeError:
+    #     print(f"[Smolify Error] Invalid JSON received from API. Using fallback.")
+    # except Exception as e:
+    #     print(f"[Smolify Error] Unexpected error: {e}")
+    
+    from db.store import add_policy
+    add_policy(fallback_response)
         
     return fallback_response
 

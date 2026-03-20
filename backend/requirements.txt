@@ -1,8 +1,9 @@
-fastapi 
+fastapi
 uvicorn
 pandas
 requests
 appwrite
+numpy
+scikit-learn
 py-algorand-sdk
 python-dotenv
-scikit-learn

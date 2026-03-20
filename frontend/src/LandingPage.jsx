@@ -54,6 +54,14 @@ const LandingPage = () => {
         </nav>
       </div>
 
+      <div className="site-summary-container">
+        <p className="site-summary">
+          A smart supply chain digital twin platform that combines AI-driven simulation, 
+          optimized edge intelligence, seamless API integration, and Algorand-powered 
+          real-time micro-transaction tracking for transparent, efficient logistics.
+        </p>
+      </div>
+
       <footer className="landing-footer">
         <p>V 1.0.0 // MATRIX PROTOCOL</p>
       </footer>
