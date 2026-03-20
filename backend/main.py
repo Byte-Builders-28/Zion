@@ -2,8 +2,7 @@ import sys
 import uvicorn
 from fastapi import FastAPI
 
-from routes import dashboard_api, events
-
+from routes import dashboard_api, events, rl_routes
 from middleware.interceptor import interceptor
 
 app = FastAPI()
@@ -14,6 +13,7 @@ app.middleware("http")(interceptor)
 
 app.include_router(dashboard_api.router)
 app.include_router(events.router)
+app.include_router(rl_routes.router)
 
 @app.get("/")
 def root():
