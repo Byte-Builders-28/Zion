@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import MatrixRain from '../MatrixRain';
 
 const navLinks = [
   { label: '_DASHBOARD', path: '/dashboard' },
@@ -9,13 +10,13 @@ const navLinks = [
 ];
 
 const sectionClassMap = {
-  '/dashboard': 'page-dashboard',
+  '/dashboard':  'page-dashboard',
   '/simulation': 'page-simulation',
-  '/threats': 'page-threats',
-  '/policies': 'page-policies'
+  '/threats':    'page-threats',
+  '/policies':   'page-policies'
 };
 
-import MatrixRain from '../MatrixRain';
+const MULTI_COLORS = ['#0F0', '#F00', '#0AF', '#FF0'];
 
 const ConsoleLayout = () => {
   const location = useLocation();
@@ -23,7 +24,7 @@ const ConsoleLayout = () => {
 
   return (
     <div className="zion-shell font-mono text-green-500">
-      <MatrixRain opacity={0.45} />
+      <MatrixRain opacity={0.45} colors={MULTI_COLORS} />
       <header className="zion-header">
         <NavLink to="/" className="zion-brand glitch" data-text="ZION // API DEFENSE SYSTEM">
           ZION // API DEFENSE SYSTEM
