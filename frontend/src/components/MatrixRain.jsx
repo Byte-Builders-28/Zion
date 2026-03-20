@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-const MatrixRain = ({ opacity = 0.45, colors = ['#0F0'] }) => {
+const MatrixRain = ({ opacity = 0.45, colors = ['#0F0', '#F00', '#0AF', '#FF0'] }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
