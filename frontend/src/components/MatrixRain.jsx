@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-const MatrixRain = () => {
+const MatrixRain = ({ opacity = 0.45, colors = ['#0F0', '#F00', '#0AF', '#FF0'] }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -15,46 +15,48 @@ const MatrixRain = () => {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Matrix characters (Katakana + Latin + Numerals)
-    const text = 'ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    // Matrix characters (Alphabets only)
+    const text = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const matrix = text.split('');
 
     const fontSize = 16;
     const columns = canvas.width / fontSize;
 
-    // Array of drops - one per column
+
+
+    // Array of drops and their colors
     const drops = [];
+    const dropColors = [];
     for (let x = 0; x < columns; x++) {
-      drops[x] = Math.random() * -100; // Start at random positions above screen
+      drops[x] = Math.random() * -100;
+      dropColors[x] = colors[Math.floor(Math.random() * colors.length)];
     }
 
     // Drawing the characters
     const draw = () => {
-      // Black background with slightly stronger opacity for better trailing
       ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.font = fontSize + 'px monospace';
 
       for (let i = 0; i < drops.length; i++) {
-        // Random characters
         const charHead = matrix[Math.floor(Math.random() * matrix.length)];
         const charTail = matrix[Math.floor(Math.random() * matrix.length)];
         
-        // Draw the tail character in green
-        ctx.fillStyle = '#0F0';
+        // Draw the tail character in its assigned color
+        ctx.fillStyle = dropColors[i];
         ctx.fillText(charTail, i * fontSize, (drops[i] - 1) * fontSize);
 
-        // Draw the head character in white for the glowing falling effect
+        // Draw the head character in white for the glowing effect
         ctx.fillStyle = '#FFF';
         ctx.fillText(charHead, i * fontSize, drops[i] * fontSize);
 
-        // Sending the drop back to the top randomly after it has crossed the screen
         if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
           drops[i] = 0;
+          // Assign a new random color when the drop resets
+          dropColors[i] = colors[Math.floor(Math.random() * colors.length)];
         }
 
-        // Incrementing Y coordinate
         drops[i]++;
       }
     };
@@ -78,7 +80,7 @@ const MatrixRain = () => {
         height: '100%',
         zIndex: -1, // Keep it behind everything
         backgroundColor: 'black',
-        opacity: 0.45 // Soften the background effect
+        opacity: opacity // Customizable background effect
       }}
     />
   );
