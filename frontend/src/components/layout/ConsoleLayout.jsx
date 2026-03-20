@@ -23,7 +23,7 @@ const ConsoleLayout = () => {
 
   return (
     <div className="zion-shell font-mono text-green-500">
-      <MatrixRain opacity={0.45} />
+      <MatrixRain opacity={0.45} colors={['#0F0', '#F00', '#0AF', '#FF0']} />
       <header className="zion-header">
         <NavLink to="/" className="zion-brand glitch" data-text="ZION // API DEFENSE SYSTEM">
           ZION // API DEFENSE SYSTEM

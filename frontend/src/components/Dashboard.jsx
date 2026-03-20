@@ -1,7 +1,116 @@
 import React from 'react';
 import './Dashboard.css';
+import './pages.css';
 
 const Dashboard = () => {
+  const stats = [
+    { value: '1,284', label: 'THREATS DETECTED', color: '#0f0' },
+    { value: '12',    label: 'CRITICAL ACTIVE',  color: '#f55' },
+    { value: '0.14',  label: 'AVG RISK SCORE',   color: '#ff0' },
+    { value: '42',    label: 'IPs BLOCKED',       color: '#0af' }
+  ];
+
+  const threats = [
+    { type: 'token_replay',   path: '/login',        risk: '0.96', level: 'CRITICAL' },
+    { type: 'rate_limit',     path: '/api/v1/user',  risk: '0.72', level: 'HIGH' },
+    { type: 'brute_force',    path: '/auth',         risk: '0.88', level: 'CRITICAL' },
+    { type: 'unusual_geo',    path: '/dashboard',    risk: '0.45', level: 'MED' }
+  ];
+
+  const attacks = [
+    { name: 'SQL Injection',         pct: 65 },
+    { name: 'Cross-Site Scripting',  pct: 48 },
+    { name: 'DDoS Attempt',          pct: 32 },
+    { name: 'Brute Force',           pct: 24 }
+  ];
+
+  const levelClass = l =>
+    l === 'CRITICAL' ? 'badge-red' : l === 'HIGH' ? 'badge-yellow' : 'badge-blue';
+
+  return (
+    <div className="p-6 pop-in" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      <h2 className="page-title">// ZION COMMAND CENTER — REAL-TIME THREAT OVERVIEW</h2>
+
+      {/* Stat Cards */}
+      <div className="dashboard-stat-grid" style={{ marginBottom: '2rem' }}>
+        {stats.map((s, i) => (
+          <div key={i} className="dashboard-stat-card scan-edge">
+            <div className="stat-value" style={{ color: s.color }}>{s.value}</div>
+            <div className="stat-label"  style={{ color: s.color }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Main Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+
+        {/* Left Column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+          {/* Live Traffic */}
+          <div className="glass-panel" style={{ minHeight: '220px' }}>
+            <div className="panel-title">LIVE TRAFFIC — REQUESTS/MIN</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '140px' }}>
+              <span style={{ fontFamily: 'Share Tech Mono', fontSize: '0.8rem', color: 'rgba(0,255,0,0.4)', letterSpacing: '2px' }}>
+                [ SYSTEM ANALYZING TRAFFIC DATA... ]
+              </span>
+            </div>
+          </div>
+
+          {/* Attack Breakdown */}
+          <div className="glass-panel">
+            <div className="panel-title">ATTACK TYPE BREAKDOWN</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {attacks.map((a, i) => (
+                <div key={i}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Share Tech Mono', fontSize: '0.75rem', marginBottom: '4px', color: 'rgba(0,255,0,0.7)' }}>
+                    <span>{a.name}</span><span>{a.pct}%</span>
+                  </div>
+                  <div className="prog-bar-track">
+                    <div className="prog-bar-fill" style={{ width: `${a.pct}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+          {/* Threat Feed */}
+          <div className="glass-panel" style={{ minHeight: '220px' }}>
+            <div className="panel-title">ACTIVE THREAT FEED</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', overflowY: 'auto', maxHeight: '160px' }}>
+              {threats.map((t, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,255,0,0.06)', paddingBottom: '0.5rem', fontFamily: 'Share Tech Mono', fontSize: '0.75rem' }}>
+                  <span style={{ color: '#0f0', width: '110px' }}>{t.type}</span>
+                  <span style={{ color: 'rgba(0,255,0,0.5)', flex: 1, padding: '0 0.5rem' }}>{t.path}</span>
+                  <span className={`badge ${levelClass(t.level)}`}>{t.level} {t.risk}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* System Log */}
+          <div className="glass-panel">
+            <div className="panel-title">SYSTEM LOG</div>
+            <div style={{ fontFamily: 'Share Tech Mono', fontSize: '0.72rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', color: 'rgba(0,255,0,0.6)' }}>
+              <div>[00:00:01] INITIALIZING ZION CORE...</div>
+              <div>[00:00:02] DEFENSE LAYERS ARMED</div>
+              <div>[00:00:04] ML-MODEL: ISOLATION FOREST LOADED</div>
+              <div>[00:00:05] MONITORING TRAFFIC ON PORT 80/443</div>
+              <div style={{ color: '#0f0', animation: 'scanEdge 2s linear infinite' }}>_ SYSTEM STANDBY...</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
   const stats = [
     { value: '1,284', label: 'THREATS DETECTED', color: '#0f0' },
     { value: '12', label: 'CRITICAL ACTIVE', color: '#f00' },
