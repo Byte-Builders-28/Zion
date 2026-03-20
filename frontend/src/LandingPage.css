@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
 
 .landing-container {
   min-height: 100vh;
@@ -134,6 +134,41 @@
   color: #055005;
   font-size: 0.8rem;
   letter-spacing: 2px;
+}
+
+.site-summary-container {
+  width: 100%;
+  max-width: 1100px;
+  margin: 3rem auto;
+  text-align: center;
+  padding: 1.5rem 2.5rem;
+  z-index: 5;
+  position: relative;
+  background: rgba(0, 15, 0, 0.6);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  border-radius: 16px;
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.8),
+    inset 0 0 30px rgba(0, 255, 0, 0.1);
+  animation: summaryPulse 4s infinite alternate;
+}
+
+@keyframes summaryPulse {
+  from { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 255, 0, 0.05); }
+  to { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), inset 0 0 40px rgba(0, 255, 0, 0.15); }
+}
+
+.site-summary {
+  color: #0f0;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  line-height: 1.7;
+  opacity: 1;
+  text-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
+  letter-spacing: 2px;
+  margin: 0;
 }
 
 @keyframes glitch {
