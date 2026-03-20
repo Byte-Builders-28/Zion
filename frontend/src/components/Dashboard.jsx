@@ -37,21 +37,6 @@ const Dashboard = () => {
           <div key={i} className="dashboard-stat-card scan-edge">
             <div className="stat-value" style={{ color: s.color }}>{s.value}</div>
             <div className="stat-label"  style={{ color: s.color }}>{s.label}</div>
-    { value: '12', label: 'CRITICAL ACTIVE', color: '#f00' },
-    { value: '0.14', label: 'AVG RISK SCORE', color: '#ff0' },
-    { value: '42', label: 'IPs BLOCKED', color: '#0af' }
-  ];
-
-  return (
-    <div className="p-6">
-      <h2 className="dashboard-section-title">// ZION COMMAND CENTER -- REAL-TIME THREAT OVERVIEW</h2>
-      
-      {/* Stats Row */}
-      <div className="dashboard-stat-grid">
-        {stats.map((stat, index) => (
-          <div key={index} className="dashboard-stat-card">
-            <div className="stat-value" style={{ color: stat.color }}>{stat.value}</div>
-            <div className="stat-label" style={{ color: stat.color }}>{stat.label}</div>
           </div>
         ))}
       </div>
@@ -115,6 +100,10 @@ const Dashboard = () => {
               ].map((l, i) => <div key={i}>{l}</div>)}
               <div style={{ color: '#0f0', marginTop: '4px' }}>▌ SYSTEM STANDBY...</div>
             </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-6">
         {/* Left Column */}
         <div className="space-y-6">
