@@ -15,12 +15,15 @@ const sectionClassMap = {
   '/policies': 'page-policies'
 };
 
+import MatrixRain from '../MatrixRain';
+
 const ConsoleLayout = () => {
   const location = useLocation();
   const sectionClass = sectionClassMap[location.pathname] || 'page-generic';
 
   return (
     <div className="zion-shell font-mono text-green-500">
+      <MatrixRain opacity={0.45} />
       <header className="zion-header">
         <NavLink to="/" className="zion-brand glitch" data-text="ZION // API DEFENSE SYSTEM">
           ZION // API DEFENSE SYSTEM

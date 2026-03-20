@@ -75,7 +75,7 @@ const LandingPage = () => {
 
   return (
     <div className="landing-container">
-      <MatrixRain />
+      <MatrixRain colors={['#0F0']} />
       
       <header className="landing-header">
         <h1 className="glitch" data-text="ZION">ZION</h1>
