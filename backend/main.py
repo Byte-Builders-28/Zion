@@ -1,19 +1,33 @@
 import sys
 import uvicorn
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 
-from routes import dashboard_api, events
+from db.store import init_chain_table
+from routes import dashboard_api, events, simulate, anomalies
+from routes.chain_routes import router as chain_router
 
 from middleware.interceptor import interceptor
 
-app = FastAPI()
 
+@asynccontextmanager
+async def lifespan(app):
+    init_chain_table()
+    print("[DB] chain_log table ready")
+    yield
+
+
+app = FastAPI(title="Zion", lifespan=lifespan)
 app.middleware("http")(interceptor)
 
 # Routers
 
 app.include_router(dashboard_api.router)
 app.include_router(events.router)
+app.include_router(simulate.router)
+app.include_router(anomalies.router)
+app.include_router(chain_router)
+
 
 @app.get("/")
 def root():
@@ -58,4 +72,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-
