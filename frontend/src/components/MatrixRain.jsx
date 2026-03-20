@@ -77,7 +77,8 @@ const MatrixRain = () => {
         width: '100%',
         height: '100%',
         zIndex: -1, // Keep it behind everything
-        backgroundColor: 'black'
+        backgroundColor: 'black',
+        opacity: 0.45 // Soften the background effect
       }}
     />
   );
