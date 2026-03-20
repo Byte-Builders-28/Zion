@@ -136,39 +136,70 @@
   letter-spacing: 2px;
 }
 
-.site-summary-container {
+.features-section {
   width: 100%;
-  max-width: 1100px;
-  margin: 3rem auto;
-  text-align: center;
-  padding: 1.5rem 2.5rem;
+  max-width: 1200px;
+  margin: 4rem auto 2rem;
+  padding: 0 1rem;
   z-index: 5;
   position: relative;
-  background: rgba(0, 15, 0, 0.6);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  border: 1px solid rgba(0, 255, 0, 0.3);
-  border-radius: 16px;
-  box-shadow: 
-    0 20px 50px rgba(0, 0, 0, 0.8),
-    inset 0 0 30px rgba(0, 255, 0, 0.1);
-  animation: summaryPulse 4s infinite alternate;
 }
 
-@keyframes summaryPulse {
-  from { box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 255, 0, 0.05); }
-  to { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), inset 0 0 40px rgba(0, 255, 0, 0.15); }
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  animation: featuresFadeIn 1s ease-out;
 }
 
-.site-summary {
+@keyframes featuresFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.feature-box {
+  background: rgba(0, 15, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 0, 0.15);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.feature-box:hover {
+  transform: translateY(-8px);
+  background: rgba(0, 30, 0, 0.6);
+  border-color: rgba(0, 255, 0, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 255, 0, 0.2);
+}
+
+.feature-icon {
+  width: 32px;
+  height: 32px;
+  color: #0f0;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.5));
+}
+
+.feature-title {
   color: #0f0;
   font-family: 'Orbitron', sans-serif;
   font-size: 1.1rem;
-  line-height: 1.7;
-  opacity: 1;
-  text-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
-  letter-spacing: 2px;
+  margin: 0 0 0.75rem 0;
+  letter-spacing: 1px;
+}
+
+.feature-desc {
+  color: #aaddaa;
+  font-size: 0.9rem;
+  line-height: 1.6;
   margin: 0;
+  font-family: 'Share Tech Mono', monospace;
 }
 
 @keyframes glitch {
