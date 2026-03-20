@@ -3,21 +3,13 @@ import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
-from db.store import init_chain_table
 from routes import dashboard_api, events, simulate, anomalies
 from routes.chain_routes import router as chain_router
 
 from middleware.interceptor import interceptor
 
 
-@asynccontextmanager
-async def lifespan(app):
-    init_chain_table()
-    print("[DB] chain_log table ready")
-    yield
-
-
-app = FastAPI(title="Zion", lifespan=lifespan)
+app = FastAPI(title="Zion")
 app.middleware("http")(interceptor)
 
 # Routers

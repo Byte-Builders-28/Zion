@@ -2,3 +2,7 @@ fastapi
 uvicorn
 pandas
 requests
+appwrite
+py-algorand-sdk
+python-dotenv
+scikit-learn

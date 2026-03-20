@@ -1,69 +1,75 @@
-﻿import sqlite3
-from datetime import datetime
+﻿import os
 
-DB_PATH = "zion.db"
+from dotenv import load_dotenv
 
+from appwrite.client import Client
+from appwrite.services.tables_db import TablesDB
+from appwrite.query import Query
 
-def init_chain_table():
-    "Run once at startup — creates chain_log table if not exists"
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS chain_log (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            incident_id  TEXT NOT NULL,
-            tx_id        TEXT NOT NULL,
-            explorer_url TEXT NOT NULL,
-            threat_type  TEXT,
-            risk         REAL,
-            endpoint     TEXT,
-            logged_at    TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
-    conn.close()
+# load env
+load_dotenv()
+
+# config (MAKE SURE THESE MATCH EXACT APPWRITE IDs)
+PROJECT_ID = os.getenv("APPWRITE_PROJECT_ID")
+API_KEY = os.getenv("APPWRITE_API_KEY")
+DATABASE_ID = os.getenv("APPWRITE_DATABASE_ID")
+TABLE_ID = os.getenv("APPWRITE_COLLECTION_ID")  # still using same env name
+ENDPOINT = os.getenv("APPWRITE_ENDPOINT")
+
+# client setup
+client = Client()
+client.set_endpoint(ENDPOINT)
+client.set_project(PROJECT_ID)
+client.set_key(API_KEY)
+
+db = TablesDB(client)
 
 
 def save_chain_record(record: dict):
-    "Called after Algorand confirms TX — saves to local SQLite"
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("""
-        INSERT INTO chain_log
-            (incident_id, tx_id, explorer_url, threat_type, risk, endpoint)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        record["incident_id"],
-        record["tx_id"],
-        record["explorer_url"],
-        record.get("threat_type", "unknown"),
-        record.get("risk", 0.0),
-        record.get("endpoint", "/"),
-    ))
-    conn.commit()
-    conn.close()
+    "Called after Algorand confirms TX — saves to Appwrite"
+
+    print(record)
+
+    db.create_row(
+        database_id=DATABASE_ID,
+        table_id=TABLE_ID,
+        row_id="unique()",  # auto ID
+        data={
+            "incidentId": record["incident_id"],
+            "txId": record["tx_id"],
+            "explorerUrl": record["explorer_url"],
+            "threatType": record.get("threat_type", "unknown"),
+            "risk": float(record.get("risk", 0.0)),
+            "endpoint": record.get("endpoint", "/"),
+        }
+    )
 
 
 def fetch_chain_records(limit=20) -> list:
     "Returns last N chain records for the frontend Chain Log page"
-    conn = sqlite3.connect(DB_PATH)
-    rows = conn.execute("""
-        SELECT incident_id, tx_id, explorer_url,
-               threat_type, risk, endpoint, logged_at
-        FROM chain_log
-        ORDER BY id DESC
-        LIMIT ?
-    """, (limit,)).fetchall()
-    conn.close()
+
+    res = db.list_rows(
+        database_id=DATABASE_ID,
+        table_id=TABLE_ID,
+        queries=[
+            Query.order_desc("$createdAt"),
+            Query.limit(limit)
+        ]
+    )
 
     return [
         {
-            "incident_id": r[0],
-            "tx_id": r[1],
-            "tx_short": r[1][:8] + "..." + r[1][-4:],
-            "explorer_url": r[2],
-            "threat_type": r[3],
-            "risk": r[4],
-            "endpoint": r[5],
-            "logged_at": r[6],
+            "incident_id": d.get("incident_id"),
+            "tx_id": d.get("tx_id"),
+            "tx_short": (
+                d.get("tx_id")[:8] + "..." + d.get("tx_id")[-4:]
+                if d.get("tx_id") else ""
+            ),
+            "explorer_url": d.get("explorer_url"),
+            "threat_type": d.get("threat_type"),
+            "risk": d.get("risk"),
+            "endpoint": d.get("endpoint"),
+            "logged_at": d.get("logged_at"),
         }
-        for r in rows
+        for d in res["rows"]
     ]
