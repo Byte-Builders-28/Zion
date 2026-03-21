@@ -59,8 +59,10 @@ async def interceptor(request: Request, call_next):
 
     payload_size = int(request.headers.get("content-length", 0))
 
+    endpoint_path = request.url.path
+
     log_data = {
-        "endpoint": request.url.path,
+        "endpoint": endpoint_path,
         "method": request.method,
         "ip": request.client.host if request.client else "unknown",
         "timestamp": time.time(),
@@ -71,10 +73,20 @@ async def interceptor(request: Request, call_next):
     }
 
     try:
-        score_result = score_request(log_data)
+        # Skip heavy threat processing for documentation endpoints to avoid noisy alerts
+        if endpoint_path in {"/docs", "/openapi.json", "/redoc"}:
+            score_result = {
+                "risk_score": 0.0,
+                "threat_type": "anomaly",
+                "features": {},
+                "flag": False,
+            }
+        else:
+            score_result = score_request(log_data)
+
         log_data["score_result"] = score_result
         print(
-            f"[Interceptor] Score: {score_result['risk_score']} | Flag: {score_result['flag']} | Type: {score_result['threat_type']}")
+            f"[Interceptor] Score: {score_result.get('risk_score')} | Flag: {score_result.get('flag')} | Type: {score_result.get('threat_type')}")
 
         # If threat exists, generate policy and log
         if score_result.get("flag"):
