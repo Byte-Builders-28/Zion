@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import MatrixRain from './components/MatrixRain';
 import TiltCard from './components/TiltCard';
+import ScrambledText from './components/ScrambledText';
 import './LandingPage.css';
 
 const LandingPage = () => {
