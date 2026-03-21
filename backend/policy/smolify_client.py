@@ -55,6 +55,8 @@ def generate_policy(threat_report: dict) -> dict:
         default_action = "rate_limit"
     elif threat_type == "endpoint_scraping":
         default_action = "rate_limit"
+    elif threat_type == "param_fuzzing":
+        default_action = "rate_limit"
     else:
         default_action = "rate_limit" if risk_score > 0.8 else "monitor"
 

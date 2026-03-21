@@ -87,8 +87,15 @@ def _classify_threat(features: list, risk: float) -> str:
         return "token_replay"
 
     # 3) Endpoint scraping: one IP touches many endpoints rapidly
-    if variety >= 10 and req_pm >= 15:
+    # Keep this as *high variety* so it doesn't overlap with param fuzzing.
+    if variety >= 20 and req_pm >= 15:
         return "endpoint_scraping"
+
+    # 3.5) Parameter fuzzing: rapid requests with *moderate* endpoint variety.
+    # In this codebase we don't model query-strings separately, so we treat
+    # path-variant probing of a small set of endpoints as param fuzzing.
+    if req_pm >= 30 and 8 <= variety < 20 and uniq_ips <= 2 and token_reuse == 0 and fails <= 2:
+        return "param_fuzzing"
 
     # 4) DDoS: high volume hitting an endpoint from multiple IPs
     # (We keep the uniq_ips threshold low enough to avoid early mislabeling.)
