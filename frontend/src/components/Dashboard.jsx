@@ -82,6 +82,7 @@ const Dashboard = () => {
         const response = await fetch(`${backendUrl}${API_ENDPOINTS.DASHBOARD_STATS}`);
         if (response.ok) {
           const data = await response.json();
+          console.log('Dashboard stats fetched:', data);
           
           // Map backend data to frontend stats
           const updatedStats = [

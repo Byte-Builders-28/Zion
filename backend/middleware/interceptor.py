@@ -137,9 +137,12 @@ async def interceptor(request: Request, call_next):
         )
 
         if score_result.get("flag"):
+            print(total_threats)
             # thread-safe increment
             with threat_lock:
                 total_threats += 1
+            
+            print(total_threats)
 
             asyncio.create_task(
                 asyncio.to_thread(background_threat_handler,

@@ -6,10 +6,20 @@ from contextlib import asynccontextmanager
 from routes import dashboard_api, events, simulate, anomalies, rl_routes
 from routes.chain_routes import router as chain_router
 
+from fastapi.middleware.cors import CORSMiddleware
 from middleware.interceptor import interceptor
 
 
 app = FastAPI(title="Zion")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.middleware("http")(interceptor)
 
 # Routers
