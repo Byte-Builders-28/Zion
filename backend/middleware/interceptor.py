@@ -7,7 +7,7 @@ from threading import Lock
 
 from ml.detector import score_request
 from policy.smolify_client import generate_policy
-from policy.executor import execute_action, is_blocked, is_rate_limited, is_token_revoked
+from policy.executor import execute_action, is_blocked, is_rate_limited, is_token_revoked, is_endpoint_under_attack
 from blockchain.algorand_logger import log_incident
 
 log_queue = Queue(maxsize=10000)
@@ -71,12 +71,26 @@ async def interceptor(request: Request, call_next):
 
     start_time = time.time()
 
-    ip = request.client.host if request.client else "unknown"
+    # Support for proxies
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        ip = forwarded.split(",")[0].strip()
+    else:
+        ip = request.client.host if request.client else "unknown"
     auth_header = request.headers.get("Authorization", "")
     token = auth_header.split(
         "Bearer ")[-1] if "Bearer " in auth_header else ""
 
-    # ── Enforcement gate ──
+    # ── Enforcement gate — runs BEFORE processing request ──
+    endpoint_path = request.url.path
+
+    if is_endpoint_under_attack(endpoint_path):
+        print(f"[Interceptor] BLOCKED request to {endpoint_path} (Endpoint under DDoS attack)")
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Service currently under heavy load — dropping traffic"}
+        )
+
     if is_blocked(ip):
         return JSONResponse(status_code=403, content={"detail": "IP blocked by Zion security policy"})
 
@@ -91,7 +105,6 @@ async def interceptor(request: Request, call_next):
     process_time = time.time() - start_time
 
     payload_size = int(request.headers.get("content-length", 0))
-    endpoint_path = request.url.path
 
     log_data = {
         "endpoint": endpoint_path,
