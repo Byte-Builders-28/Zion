@@ -27,6 +27,8 @@ def background_threat_handler(score_result: dict, log_data: dict):
             "risk_score":  score_result.get("risk_score")
         })
 
+        print(policy)
+
         # Execute the AI decision
         execute_action(policy.get("action", "monitor"), {
             "ip":       log_data["ip"],
@@ -44,7 +46,8 @@ def background_threat_handler(score_result: dict, log_data: dict):
             "policy":   policy.get("rule_name", "unknown")
         })
 
-        print(f"[Threat Handler] Action: {policy.get('action')} | IP: {log_data['ip']}")
+        print(
+            f"[Threat Handler] Action: {policy.get('action')} | IP: {log_data['ip']}")
 
     except Exception as e:
         print(f"[Threat Handler Error] {e}")
@@ -63,7 +66,8 @@ async def interceptor(request: Request, call_next):
 
     ip = request.client.host if request.client else "unknown"
     auth_header = request.headers.get("Authorization", "")
-    token = auth_header.split("Bearer ")[-1] if "Bearer " in auth_header else ""
+    token = auth_header.split(
+        "Bearer ")[-1] if "Bearer " in auth_header else ""
 
     # ── Enforcement gate — runs BEFORE processing request ──
     if is_blocked(ip):
@@ -94,8 +98,6 @@ async def interceptor(request: Request, call_next):
     payload_size = int(request.headers.get("content-length", 0))
     endpoint_path = request.url.path
 
-    endpoint_path = request.url.path
-
     log_data = {
         "endpoint":     endpoint_path,
         "method":       request.method,
@@ -120,11 +122,13 @@ async def interceptor(request: Request, call_next):
             score_result = score_request(log_data)
 
         log_data["score_result"] = score_result
-        print(f"[Interceptor] Score: {score_result.get('risk_score')} | Flag: {score_result.get('flag')} | Type: {score_result.get('threat_type')}")
+        print(
+            f"[Interceptor] Score: {score_result.get('risk_score')} | Flag: {score_result.get('flag')} | Type: {score_result.get('threat_type')}")
 
         if score_result.get("flag"):
             asyncio.create_task(
-                asyncio.to_thread(background_threat_handler, score_result, log_data)
+                asyncio.to_thread(background_threat_handler,
+                                  score_result, log_data)
             )
 
     except Exception as e:
