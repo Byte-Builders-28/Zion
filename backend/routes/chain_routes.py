@@ -41,3 +41,4 @@ def get_tx_detail(tx_id: str):
         return {"tx_id": tx_id, "data": tx, "found": True}
     except Exception:
         return {"tx_id": tx_id, "found": False}
+    
