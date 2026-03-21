@@ -29,13 +29,13 @@ const MatrixRain = ({ opacity = 0.45, colors = ['#0F0', '#F00', '#0AF', '#FF0'] 
     const SPEED_MAX    = 3.5;  // center fall speed (px/frame)
     const SPEED_MIN    = 0.3;  // edge fall speed
     const BRIGHT_MAX   = 1.0;  // center brightness
-    const BRIGHT_MIN   = 0.15; // edge brightness
+    const BRIGHT_MIN   = 0.4; // edge brightness
     const CLEAR_R      = 80;   // cursor clear radius
     const SCATTER_R    = 180;  // cursor scatter radius
     const ACCEL_R      = 260;  // cursor accel radius
-    const TRAIL_ALPHA  = 0.08; // lower = longer trails
+    const TRAIL_ALPHA  = 0.03; // lower = longer trails
 
-    const CHARS = 'ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
     const rChar = () => CHARS[Math.floor(Math.random() * CHARS.length)];
 
     /* parse "#RRGGBB" or "#RGB" → [r,g,b] */
@@ -136,8 +136,8 @@ const MatrixRain = ({ opacity = 0.45, colors = ['#0F0', '#F00', '#0AF', '#FF0'] 
         const [r, g, b] = hexRgb(col.color);
         ctx.font = `${col.fontSize}px monospace`;
 
-        /* trail char — colored, dimmer */
-        ctx.fillStyle = `rgba(${r},${g},${b},${col.bright * 0.6})`;
+        /* trail char — colored, brighter */
+        ctx.fillStyle = `rgba(${r},${g},${b},${col.bright * 0.9})`;
         ctx.fillText(rChar(), drawX, col.y - col.fontSize);
 
         /* head char — white hot */
