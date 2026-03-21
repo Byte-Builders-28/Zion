@@ -13,9 +13,26 @@ async def get_dashboard_stats():
     return {
         "ips_blocked": len(state.get("blocked_ips", [])),
         "rate_limited_ips": len(state.get("rate_limited_ips", [])),
-        "revoked_tokens_count": len(state.get("revoked_tokens", [])),
+        "revoked_tokens_count": int(state.get("revoked_tokens_count", 0)),
+        "endpoints_protected": len(state.get("rate_limited_endpoints", [])),
         "total_threats": interceptor_module.total_threats  # ✅ live value
     }
+
+
+@router.get("/raw_logs")
+async def raw_logs(limit: int = 200):
+    """Snapshot recent logs without draining the queue (demo/debug endpoint)."""
+    items = []
+    temp = []
+    while not interceptor_module.log_queue.empty():
+        item = interceptor_module.log_queue.get()
+        items.append(item)
+        temp.append(item)
+    for item in temp:
+        interceptor_module.log_queue.put(item)
+    if not items:
+        return {"msg": "no data"}
+    return items[-int(limit):]
 
 
 @router.websocket("/logs")

@@ -11,7 +11,8 @@ from policy.executor import execute_action, is_blocked, is_rate_limited, is_toke
 from blockchain.algorand_logger import log_incident
 
 log_queue = Queue(maxsize=10000)
-last_alert_time = 0
+_last_alert_by_key = {}
+_alert_lock = Lock()
 
 # Thread-safe counter
 total_threats = 0
@@ -19,40 +20,57 @@ threat_lock = Lock()
 
 
 def background_threat_handler(score_result: dict, log_data: dict):
-    global last_alert_time
+    threat_type = score_result.get("threat_type")
+    endpoint = log_data.get("endpoint")
+    ip = log_data.get("ip")
+    token = log_data.get("token")
 
-    if time.time() - last_alert_time < 10:
-        return
-    last_alert_time = time.time()
+    # Throttle by *context* (not globally), so different attack types can trigger
+    # their distinct mitigations without being blocked by an unrelated event.
+    if threat_type == "token_replay" and token:
+        throttle_key = ("token_replay", token)
+        throttle_window_s = 2
+    elif threat_type == "ddos" and endpoint:
+        throttle_key = ("ddos", endpoint)
+        throttle_window_s = 5
+    else:
+        throttle_key = (str(threat_type), str(ip))
+        throttle_window_s = 5
+
+    now = time.time()
+    with _alert_lock:
+        last = _last_alert_by_key.get(throttle_key, 0)
+        if now - last < throttle_window_s:
+            return
+        _last_alert_by_key[throttle_key] = now
 
     try:
         policy = generate_policy({
-            "threat_type": score_result.get("threat_type"),
-            "endpoint": log_data["endpoint"],
-            "ip": log_data["ip"],
+            "threat_type": threat_type,
+            "endpoint": endpoint,
+            "ip": ip,
             "risk_score": score_result.get("risk_score")
         })
 
         print(policy)
 
         execute_action(policy.get("action", "monitor"), {
-            "ip": log_data["ip"],
-            "token": log_data.get("token"),
-            "endpoint": log_data["endpoint"],
+            "ip": ip,
+            "token": token,
+            "endpoint": endpoint,
             "risk": score_result.get("risk_score", 0.0)
         })
 
         log_incident({
             "id": str(int(time.time() * 1000)),
-            "type": score_result.get("threat_type"),
-            "endpoint": log_data["endpoint"],
-            "ip": log_data["ip"],
+            "type": threat_type,
+            "endpoint": endpoint,
+            "ip": ip,
             "risk": score_result.get("risk_score"),
             "policy": policy.get("rule_name", "unknown")
         })
 
-        print(
-            f"[Threat Handler] Action: {policy.get('action')} | IP: {log_data['ip']}")
+        print(f"[Threat Handler] Action: {policy.get('action')} | IP: {ip}")
 
     except Exception as e:
         print(f"[Threat Handler Error] {e}")
@@ -84,15 +102,6 @@ async def interceptor(request: Request, call_next):
     # ── Enforcement gate — runs BEFORE processing request ──
     endpoint_path = request.url.path
 
-    if is_endpoint_under_attack(endpoint_path):
-        print(
-            f"[Interceptor] BLOCKED request to {endpoint_path} (Endpoint under attack)")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "detail": "Service currently under heavy load — dropping traffic"}
-        )
-
     if is_blocked(ip):
         return JSONResponse(status_code=403, content={"detail": "IP blocked by Zion security policy"})
 
@@ -101,6 +110,47 @@ async def interceptor(request: Request, call_next):
 
     if token and is_token_revoked(token):
         return JSONResponse(status_code=401, content={"detail": "Token revoked by Zion security policy"})
+
+    if is_endpoint_under_attack(endpoint_path):
+        print(f"[Interceptor] BLOCKED request to {endpoint_path} (Endpoint under attack)")
+
+        # Still log, and (for token-bearing requests) still score, so we can
+        # detect token replay and revoke the token even while the endpoint is protected.
+        log_data = {
+            "endpoint": endpoint_path,
+            "method": request.method,
+            "ip": ip,
+            "timestamp": time.time(),
+            "latency": 0.0,
+            "token": token,
+            "payload_size": int(request.headers.get("content-length", 0)),
+            "status_code": 503,
+        }
+
+        try:
+            if token:
+                score_result = score_request(log_data)
+                log_data["score_result"] = score_result
+
+                if score_result.get("flag") and score_result.get("threat_type") == "token_replay":
+                    asyncio.create_task(
+                        asyncio.to_thread(background_threat_handler, score_result, log_data)
+                    )
+            else:
+                log_data["score_result"] = {
+                    "risk_score": 0.0,
+                    "threat_type": "anomaly",
+                    "features": {},
+                    "flag": False,
+                }
+        except Exception as e:
+            log_data["score_result"] = {"flag": False, "error": str(e)}
+
+        add_log(log_data)
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Service currently under heavy load — dropping traffic"},
+        )
 
     # ── Normal request flow ──
     response = await call_next(request)

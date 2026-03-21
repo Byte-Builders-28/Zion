@@ -12,14 +12,24 @@ def execute_action(action: str, context: dict) -> dict:
     endpoint = context.get("endpoint", "/")
     risk = context.get("risk", 0.0)
 
-    # If heavily distributed or rate flooded, protect the endpoint
-    if risk > 0.8 and action in ("block", "rate_limit") and endpoint != "/":
-        rate_limited_endpoints[endpoint] = {
-            "limit": 50, # Global endpoint limit
-            "window": 60,
-            "since": time.time()
+    def _protect_endpoint(ep: str, limit: int = 50, window: int = 60) -> None:
+        if not ep or ep == "/":
+            return
+        rate_limited_endpoints[ep] = {
+            "limit": int(limit),
+            "window": int(window),
+            "since": time.time(),
         }
-        print(f"[Executor] ENDPOINT RATE LIMITED: {endpoint}")
+        print(f"[Executor] ENDPOINT PROTECTED: {ep} (limit={limit}/min)")
+
+    # If heavily distributed or rate flooded, protect the endpoint (in addition to IP-level action).
+    if risk > 0.8 and action in ("block", "rate_limit"):
+        _protect_endpoint(endpoint, limit=50, window=60)
+
+    if action == "protect_endpoint":
+        # DDoS mitigation: protect the endpoint without blocking a single IP.
+        _protect_endpoint(endpoint, limit=50, window=60)
+        return {"executed": "protect_endpoint", "endpoint": endpoint, "limit": 50, "window": 60}
 
     if action == "block":
         blocked_ips.add(ip)

@@ -78,24 +78,25 @@ def _classify_threat(features: list, risk: float) -> str:
     if risk < 0.4:
         return "anomaly"
 
-    # Token replay: heavy reuse of the same token across many IPs
-    if token_reuse >= 5 and uniq_ips >= 3:
-        return "token_replay"
-
-    # Rate flood: very high request volume in a short window
-    if req_pm >= 120:
-        return "rate_flood"
-
-    # Credential stuffing: many failed logins in a short period
-    if fails >= 6 and req_pm >= 10:
+    # 1) Credential stuffing: many failed logins in a short period
+    if fails >= 5 and req_pm >= 10:
         return "credential_stuffing"
 
-    # Endpoint scraping: touching many different endpoints from same IP
-    if variety >= 15 and req_pm >= 20:
+    # 2) Token replay: same token reused across multiple IPs
+    if token_reuse >= 3 and uniq_ips >= 3:
+        return "token_replay"
+
+    # 3) Endpoint scraping: one IP touches many endpoints rapidly
+    if variety >= 10 and req_pm >= 15:
         return "endpoint_scraping"
 
-    # Distributed attack: many IPs sharing same token or high fan-out
-    if uniq_ips >= 10:
-        return "distributed_attack"
+    # 4) DDoS: high volume hitting an endpoint from multiple IPs
+    # (We keep the uniq_ips threshold low enough to avoid early mislabeling.)
+    if req_pm >= 40 and uniq_ips >= 3:
+        return "ddos"
+
+    # 5) Rate flood: very high rate but from single/few IPs
+    if req_pm >= 80 and uniq_ips <= 2:
+        return "rate_flood"
 
     return "anomaly"
