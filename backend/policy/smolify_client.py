@@ -49,24 +49,51 @@ def generate_policy(threat_report: dict) -> dict:
         "affected_endpoint": endpoint
     }
     
-    # We will try a dummy/mock URL or return the fallback if we don't know the exact endpoint.
-    # Replace this with the actual Smallify AI API endpoint.
-    # api_url = os.getenv("SMALLIFY_API_URL", "http://localhost:8000/api/generate_policy")
+    # HF Inference API for smolify/smolified-zion model
+    api_url = os.getenv("HF_API_URL", "https://api-inference.huggingface.co/models/smolify/smolified-zion")
+    hf_token = os.getenv("HF_TOKEN", "")
     
-    # try:
-    #     response = requests.post(api_url, json={"prompt": prompt}, timeout=5)
-    #     response.raise_for_status()
-    #     policy = response.json()
-    #     return _ensure_valid_policy(policy, fallback_response)
-    # except requests.exceptions.Timeout:
-    #     print(f"[Smolify Warning] API Timeout. Using fallback policy for {threat_type}.")
-    # except requests.exceptions.ConnectionError:
-    #     print(f"[Smolify Warning] API Unreachable. Using fallback policy for {threat_type}.")
-    # except json.JSONDecodeError:
-    #     print(f"[Smolify Error] Invalid JSON received from API. Using fallback.")
-    # except Exception as e:
-    #     print(f"[Smolify Error] Unexpected error: {e}")
+    headers = {"Authorization": f"Bearer {hf_token}"} if hf_token else {}
     
+    try:
+        if hf_token:
+            response = requests.post(api_url, headers=headers, json={"inputs": prompt}, timeout=5)
+            response.raise_for_status()
+            
+            # The API might return a list with generated_text
+            res_data = response.json()
+            if isinstance(res_data, list) and len(res_data) > 0 and "generated_text" in res_data[0]:
+                generated_text = res_data[0]["generated_text"]
+                # Try parsing the generated text as JSON
+                try:
+                    # Sometimes HF models wrap JSON in markdown blocks
+                    clean_text = generated_text.replace("```json", "").replace("```", "").strip()
+                    # Find { and } if there's conversational text around it
+                    start_idx = clean_text.find('{')
+                    end_idx = clean_text.rfind('}') + 1
+                    if start_idx != -1 and end_idx != -1:
+                        clean_text = clean_text[start_idx:end_idx]
+                        
+                    policy = json.loads(clean_text)
+                    valid_policy = _ensure_valid_policy(policy, fallback_response)
+                    from db.store import add_policy
+                    add_policy(valid_policy)
+                    return valid_policy
+                except Exception as e:
+                    print(f"[Smolify Warning] Failed to parse JSON from HF model response: {e}")
+            else:
+                print(f"[Smolify Warning] Unexpected response format from HF API.")
+        else:
+            print("[Smolify Warning] No HF_TOKEN provided, skipping HF API call.")
+            
+    except requests.exceptions.Timeout:
+        print(f"[Smolify Warning] HF API Timeout. Using fallback policy for {threat_type}.")
+    except requests.exceptions.ConnectionError:
+        print(f"[Smolify Warning] HF API Unreachable. Using fallback policy for {threat_type}.")
+    except Exception as e:
+        print(f"[Smolify Error] Unexpected error during HF call: {e}")
+    
+    # Fallback path if HF call fails or no token
     from db.store import add_policy
     add_policy(fallback_response)
         
