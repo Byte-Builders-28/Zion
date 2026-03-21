@@ -37,6 +37,8 @@ const Dashboard = () => {
         wsRef.current.onmessage = (event) => {
           try {
             const logData = JSON.parse(event.data);
+            console.log('Received terminal log entry:', logData);
+
             
             // Format log data for terminal display
             const formattedLog = {
@@ -82,7 +84,6 @@ const Dashboard = () => {
         const response = await fetch(`${backendUrl}${API_ENDPOINTS.DASHBOARD_STATS}`);
         if (response.ok) {
           const data = await response.json();
-          console.log('Dashboard stats fetched:', data);
           
           // Map backend data to frontend stats
           const updatedStats = [

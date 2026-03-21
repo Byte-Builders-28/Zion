@@ -77,7 +77,7 @@ Zion loads env vars from `backend/.env`.
 
 Create `backend/.env` with the following variables.
 
-#### Algorand (optional)
+#### Algorand (required if blockchain logging is enabled)
 
 ```env
 ALGO_MNEMONIC="word1 word2 ... word25"
@@ -96,7 +96,7 @@ Important:
 - **Never commit** `backend/.env` (it contains your mnemonic)
 - Fund the TestNet wallet from a faucet if you want successful TX confirmations
 
-#### Appwrite (optional)
+#### Appwrite (required for chain record storage)
 
 ```env
 APPWRITE_ENDPOINT="https://YOUR_APPWRITE_HOST/v1"

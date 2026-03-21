@@ -139,7 +139,7 @@ async def interceptor(request: Request, call_next):
             else:
                 log_data["score_result"] = {
                     "risk_score": 0.0,
-                    "threat_type": "anomaly",
+                    "threat_type": "normal",
                     "features": {},
                     "flag": False,
                 }
@@ -177,7 +177,7 @@ async def interceptor(request: Request, call_next):
         if (endpoint_path in {"/docs", "/openapi.json", "/redoc"} or "Dashboard" in tags):
             score_result = {
                 "risk_score": 0.0,
-                "threat_type": "anomaly",
+                "threat_type": "normal",
                 "features": {},
                 "flag": False,
             }
