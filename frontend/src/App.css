@@ -149,7 +149,7 @@ body {
 
 .zion-shell {
   min-height: 100vh;
-  background: radial-gradient(circle at top, rgba(0, 40, 0, 0.4), #010a05 70%);
+  background: transparent;
   color: var(--green-500);
 }
 
@@ -210,25 +210,23 @@ body {
 }
 
 .page-dashboard {
-  background: radial-gradient(circle at 20% 20%, rgba(0, 50, 0, 0.3), transparent 45%),
-              radial-gradient(circle at 80% 0%, rgba(0, 30, 0, 0.35), transparent 40%),
-              #040c06;
+  background: transparent;
 }
 
 .page-simulation {
-  background: linear-gradient(160deg, rgba(10, 30, 10, 0.2), rgba(2, 8, 5, 0.85));
+  background: rgba(0, 5, 0, 0.6);
 }
 
 .page-threats {
-  background: linear-gradient(120deg, rgba(0, 25, 10, 0.25), rgba(0, 0, 0, 0.8));
+  background: rgba(0, 5, 0, 0.6);
 }
 
 .page-policies {
-  background: radial-gradient(circle at center, rgba(0, 35, 5, 0.25), rgba(0, 0, 0, 0.85));
+  background: rgba(0, 5, 0, 0.6);
 }
 
 .page-section .border {
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .zion-nav .nav-link::first-letter {
