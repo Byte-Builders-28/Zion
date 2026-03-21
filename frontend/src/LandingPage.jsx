@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import MatrixRain from './components/MatrixRain';
 import TiltCard from './components/TiltCard';
+import ScrambledText from './components/ScrambledText';
 import './LandingPage.css';
 
 const LandingPage = () => {
@@ -78,7 +79,15 @@ const LandingPage = () => {
       <MatrixRain colors={['#0F0']} />
       
       <header className="landing-header">
-        <h1 className="glitch" data-text="ZION">ZION</h1>
+        <ScrambledText
+          className="glitch scrambled-text-zion"
+          radius={100}
+          duration={1.2}
+          speed={0.5}
+          scrambleChars=".:"
+        >
+          ZION
+        </ScrambledText>
         <p className="subtitle">Secure connection established.</p>
         <button className="get-started-btn" onClick={() => navigate('/dashboard')}>
           GET STARTED
