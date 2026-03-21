@@ -4,10 +4,10 @@ from uuid import uuid4
 from ml.detector import score_request
 from blockchain.algorand_logger import get_chain_history, log_incident_async
 
-router = APIRouter()
+router = APIRouter(prefix="/chain", tags=["Chain"])
 
 
-@router.post("/api/analyze")
+@router.post("/analyze")
 def analyze_request(payload: dict):
     """Scores request and writes incident to chain in background when flagged."""
     score = score_request(payload)
@@ -26,13 +26,13 @@ def analyze_request(payload: dict):
     return score
 
 
-@router.get("/api/chain")
+@router.get("/chain")
 def get_chain_log(limit: int = 20):
     """Returns last N on-chain incident records."""
     return get_chain_history(limit)
 
 
-@router.get("/api/chain/{tx_id}")
+@router.get("/chain/{tx_id}")
 def get_tx_detail(tx_id: str):
     from algosdk.v2client import algod
     client = algod.AlgodClient("", "https://testnet-api.algonode.cloud")
@@ -41,4 +41,3 @@ def get_tx_detail(tx_id: str):
         return {"tx_id": tx_id, "data": tx, "found": True}
     except Exception:
         return {"tx_id": tx_id, "found": False}
-    

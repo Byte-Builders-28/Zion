@@ -2,13 +2,15 @@
 from fastapi import APIRouter
 from ml.simulation_loop import agent, start_simulation_background, ACTIONS, N_ACTIONS
 
-router = APIRouter()
+router = APIRouter(prefix="/rl", tags=["RL"])
 
-@router.post("/api/rl/start")
+
+@router.post("/start")
 def start_rl(episodes: int = 10):
     return start_simulation_background(episodes)
 
-@router.get("/api/rl/status")
+
+@router.get("/status")
 def rl_status():
     "Returns Q-table + history for the frontend RL visualisation"
     attack_names = [ACTIONS[i][0] for i in range(N_ACTIONS)]

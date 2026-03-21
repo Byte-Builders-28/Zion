@@ -1,31 +1,111 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './pages.css';
 import './Dashboard.css';
+import config, { API_ENDPOINTS } from '../config';
 
 const Dashboard = () => {
-  const stats = [
-    { value: '1,284', label: 'THREATS DETECTED', color: '#0f0' },
-    { value: '12',    label: 'CRITICAL ACTIVE',  color: '#f55' },
-    { value: '0.14',  label: 'AVG RISK SCORE',   color: '#ff0' },
-    { value: '42',    label: 'IPs BLOCKED',       color: '#0af' }
-  ];
-
-  const threats = [
-    { type: 'token_replay',  path: '/login',       risk: '0.96', level: 'CRITICAL' },
-    { type: 'rate_limit',    path: '/api/v1/user', risk: '0.72', level: 'HIGH' },
-    { type: 'brute_force',   path: '/auth',        risk: '0.88', level: 'CRITICAL' },
-    { type: 'unusual_geo',   path: '/dashboard',   risk: '0.45', level: 'MED' }
-  ];
+  // Get backend URL from environment or use default
+  const backendUrl = config.BACKEND_BASE_URL;
+  const [logs, setLogs] = useState([]);
+  const wsRef = useRef(null);
+  
+  const [stats, setStats] = useState([
+    { value: '1,284', label: 'THREATS DETECTED', color: '#0f0', key: 'total_threats' },
+    { value: '156',    label: 'RATE LIMITED IPS',  color: '#fa0', key: 'rate_limited_ips' },
+    { value: '42',     label: 'IPs BLOCKED',       color: '#0af', key: 'ips_blocked' },
+    { value: '8',       label: 'REVOKED TOKEN COUNT', color: '#f55', key: 'revoked_tokens_count' }
+  ]);
 
   const attacks = [
-    { name: 'SQL Injection',        pct: 65, cls: '' },
-    { name: 'Cross-Site Scripting', pct: 48, cls: '' },
-    { name: 'DDoS Attempt',         pct: 33, cls: 'prog-fill-red' },
-    { name: 'Brute Force',          pct: 24, cls: 'prog-fill-blue' }
+    { name: 'SQL Injection',        pct: 65, level: 'CRITICAL', color: '#f55' },
+    { name: 'Cross-Site Scripting', pct: 48, level: 'HIGH',     color: '#fa0' },
+    { name: 'DDoS Attempt',         pct: 33, level: 'MEDIUM',   color: '#ff0' },
+    { name: 'Brute Force',          pct: 24, level: 'LOW',      color: '#0af' }
   ];
 
-  const levelClass = l =>
-    l === 'CRITICAL' ? 'badge-red' : l === 'HIGH' ? 'badge-yellow' : 'badge-blue';
+  // WebSocket connection for real-time logs
+  useEffect(() => {
+    const connectWebSocket = () => {
+      try {
+        const wsUrl = backendUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/dashboard/logs';
+        wsRef.current = new WebSocket(wsUrl);
+        
+        wsRef.current.onopen = () => {
+          console.log('WebSocket connected to dashboard logs');
+        };
+        
+        wsRef.current.onmessage = (event) => {
+          try {
+            const logData = JSON.parse(event.data);
+            
+            // Format log data for terminal display
+            const formattedLog = {
+              endpoint: logData.endpoint || '',
+              method: logData.method || '',
+              ip: logData.ip || '',
+              status: logData.status_code || '',
+              threat: logData.score_result?.threat_type || 'normal'
+            };
+            
+            setLogs(prevLogs => [formattedLog, ...prevLogs].slice(0, 50)); // Keep last 50 logs
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        };
+        
+        wsRef.current.onclose = () => {
+          console.log('WebSocket disconnected, attempting to reconnect...');
+          setTimeout(connectWebSocket, 3000); // Reconnect after 3 seconds
+        };
+        
+        wsRef.current.onerror = (error) => {
+          console.error('WebSocket error:', error);
+        };
+      } catch (error) {
+        console.error('Failed to connect WebSocket:', error);
+      }
+    };
+    
+    connectWebSocket();
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [backendUrl]);
+
+  // Fetch dashboard data from backend
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch(`${backendUrl}${API_ENDPOINTS.DASHBOARD_STATS}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Dashboard stats fetched:', data);
+          
+          // Map backend data to frontend stats
+          const updatedStats = [
+            { value: data.total_threats?.toString() || '0', label: 'THREATS DETECTED', color: '#0f0', key: 'total_threats' },
+            { value: data.rate_limited_ips?.toString() || '0', label: 'RATE LIMITED IPS', color: '#fa0', key: 'rate_limited_ips' },
+            { value: data.ips_blocked?.toString() || '0', label: 'IPs BLOCKED', color: '#0af', key: 'ips_blocked' },
+            { value: data.revoked_tokens_count?.toString() || '0', label: 'REVOKED TOKEN COUNT', color: '#f55', key: 'revoked_tokens_count' }
+          ];
+          
+          setStats(updatedStats);
+        }
+      } catch (error) {
+        console.log('Backend connection failed, using default data');
+      }
+    };
+
+    fetchDashboardData();
+    
+    // Set up polling for real-time updates
+    const interval = setInterval(fetchDashboardData, 5000); // Update every 5 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="pop-in" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
@@ -44,136 +124,99 @@ const Dashboard = () => {
       {/* ── Main two-column grid ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
 
-        {/* Left */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-          <div className="glass-panel" style={{ minHeight: '210px' }}>
-            <div className="panel-title">LIVE TRAFFIC — REQUESTS / MIN</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '130px' }}>
-              <span style={{ fontFamily: 'Share Tech Mono', fontSize: '0.78rem', color: 'rgba(0,255,0,0.35)', letterSpacing: '2px' }}>
+        {/* Left - LIVE TRAFFIC */}
+        <div className="glass-panel" style={{ height: '400px' }}>
+          <div className="panel-title">LIVE TRAFFIC — REQUESTS / MIN</div>
+          <div style={{ 
+            height: '320px', 
+            overflowY: 'auto',
+            padding: '1rem',
+            fontFamily: 'Share Tech Mono', 
+            fontSize: '0.78rem', 
+            color: 'rgba(0,255,0,0.35)', 
+            letterSpacing: '2px'
+          }} 
+          className="traffic-scrollbar">
+            {logs.length === 0 ? (
+              <div style={{ textAlign: 'center', marginTop: '2rem' }}>
                 [ SYSTEM ANALYZING TRAFFIC DATA... ]
-              </span>
-            </div>
-          </div>
-
-          <div className="glass-panel">
-            <div className="panel-title">ATTACK TYPE BREAKDOWN</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {attacks.map((a, i) => (
-                <div key={i}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'Share Tech Mono', fontSize: '0.72rem', color: 'rgba(0,255,0,0.7)', marginBottom: '4px' }}>
-                    <span>{a.name}</span><span>{a.pct}%</span>
-                  </div>
-                  <div className="prog-track">
-                    <div className={`prog-fill ${a.cls}`} style={{ width: `${a.pct}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-          <div className="glass-panel" style={{ minHeight: '210px' }}>
-            <div className="panel-title">ACTIVE THREAT FEED</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', overflowY: 'auto', maxHeight: '150px' }}>
-              {threats.map((t, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,255,0,0.06)', paddingBottom: '0.45rem', fontFamily: 'Share Tech Mono', fontSize: '0.73rem' }}>
-                  <span style={{ color: '#0f0', width: '110px', flexShrink: 0 }}>{t.type}</span>
-                  <span style={{ color: 'rgba(0,255,0,0.45)', flex: 1, padding: '0 0.5rem' }}>{t.path}</span>
-                  <span className={`badge ${levelClass(t.level)}`}>{t.level} {t.risk}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="glass-panel">
-            <div className="panel-title">SYSTEM LOG</div>
-            <div style={{ fontFamily: 'Share Tech Mono', fontSize: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', color: 'rgba(0,255,0,0.55)' }}>
-              {[
-                '[00:00:01] INITIALIZING ZION CORE...',
-                '[00:00:02] DEFENSE LAYERS ARMED',
-                '[00:00:04] ML-MODEL: ISOLATION FOREST LOADED',
-                '[00:00:05] MONITORING TRAFFIC ON PORT 80/443',
-              ].map((l, i) => <div key={i}>{l}</div>)}
-              <div style={{ color: '#0f0', marginTop: '4px' }}>▌ SYSTEM STANDBY...</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-6">
-        {/* Left Column */}
-        <div className="space-y-6">
-          <div className="dashboard-panel h-64">
-             <h3 className="panel-header">LIVE TRAFFIC -- REQUESTS/MIN</h3>
-             <div className="h-full flex items-center justify-center">
-                 <div className="text-green-900 text-xs font-mono animate-pulse">
-                   [ SYSTEM ANALYZING TRAFFIC DATA ... ]
-                 </div>
-             </div>
-          </div>
-          
-          <div className="dashboard-panel h-48">
-              <h3 className="panel-header">ATTACK TYPE BREAKDOWN</h3>
-              <div className="space-y-4 pt-2">
-                {['SQL Injection', 'Cross-Site Scripting', 'DDoS Attempt'].map((type, i) => (
-                  <div key={i} className="space-y-1">
-                    <div className="flex justify-between text-[10px] font-mono">
-                      <span>{type}</span>
-                      <span>{65 - i * 15}%</span>
-                    </div>
-                    <div className="h-1 bg-green-900/30 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-green-500 shadow-[0_0_10px_#0f0]" 
-                        style={{ width: `${65 - i * 15}%` }}
-                      ></div>
-                    </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                {logs.map((log, index) => (
+                  <div key={index} style={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.2rem 0',
+                    borderBottom: index < logs.length - 1 ? '1px solid rgba(0,255,0,0.1)' : 'none'
+                  }}>
+                    <span style={{ color: '#0f0', minWidth: '60px' }}>
+                      {log.method}
+                    </span>
+                    <span style={{ color: '#0af', minWidth: '120px' }}>
+                      {log.ip}
+                    </span>
+                    <span style={{ color: '#fa0', minWidth: '200px', flex: 1 }}>
+                      {log.endpoint}
+                    </span>
+                    <span style={{ 
+                      color: log.status === 200 ? '#0f0' : log.status >= 400 ? '#f55' : '#fa0',
+                      minWidth: '40px',
+                      textAlign: 'right'
+                    }}>
+                      {log.status}
+                    </span>
+                    <span style={{ 
+                      color: log.threat === 'normal' ? '#0f0' : '#f55',
+                      minWidth: '80px',
+                      textAlign: 'right',
+                      fontSize: '0.7rem'
+                    }}>
+                      [{log.threat}]
+                    </span>
                   </div>
                 ))}
               </div>
+            )}
           </div>
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          <div className="dashboard-panel h-64">
-            <h3 className="panel-header">ACTIVE THREAT FEED</h3>
-             <div className="text-xs font-mono space-y-3 overflow-y-auto h-48 pr-2">
-                {[
-                  { type: 'token_replay', path: '/login', risk: '0.96', level: 'CRITICAL' },
-                  { type: 'rate_limit', path: '/api/v1/user', risk: '0.72', level: 'HIGH' },
-                  { type: 'brute_force', path: '/auth', risk: '0.88', level: 'CRITICAL' },
-                  { type: 'unusual_geo', path: '/dashboard', risk: '0.45', level: 'MED' }
-                ].map((threat, i) => (
-                  <div key={i} className="flex justify-between items-center border-b border-green-900/20 pb-2">
-                      <span className="text-green-400 w-24">{threat.type}</span>
-                      <span className="text-green-600 flex-1 px-2">{threat.path}</span>
-                      <span className={`px-2 py-0.5 border text-[9px] ${
-                        threat.level === 'CRITICAL' ? 'text-red-500 border-red-900' : 
-                        threat.level === 'HIGH' ? 'text-orange-500 border-orange-900' : 'text-yellow-500 border-yellow-900'
-                      }`}>
-                        {threat.level} {threat.risk}
-                      </span>
+        {/* Right - ATTACK TYPE BREAKDOWN */}
+        <div className="glass-panel" style={{ height: '400px' }}>
+          <div className="panel-title">ATTACK TYPE BREAKDOWN</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem 0' }}>
+            {attacks.map((a, i) => (
+              <div key={i}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'Share Tech Mono', fontSize: '0.72rem', marginBottom: '4px' }}>
+                  <span style={{ color: 'rgba(0,255,0,0.7)' }}>{a.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ 
+                      padding: '2px 6px', 
+                      borderRadius: '3px', 
+                      fontSize: '0.6rem', 
+                      fontWeight: 'bold',
+                      backgroundColor: `${a.color}20`,
+                      color: a.color,
+                      border: `1px solid ${a.color}50`
+                    }}>
+                      {a.level}
+                    </span>
+                    <span style={{ color: 'rgba(0,255,0,0.7)' }}>{a.pct}%</span>
                   </div>
-                ))}
-             </div>
+                </div>
+                <div className="prog-track">
+                  <div className="prog-fill" style={{ 
+                    width: `${a.pct}%`,
+                    backgroundColor: a.color,
+                    boxShadow: `0 0 8px ${a.color}50`
+                  }} />
+                </div>
+              </div>
+            ))}
           </div>
-
-          <div className="dashboard-panel h-48">
-             <h3 className="panel-header">SYSTEM LOG</h3>
-             <div className="text-[10px] font-mono space-y-1 text-green-600/80 max-h-32 overflow-y-auto">
-                <div>[00:00:01] INITIALIZING ZION CORE...</div>
-                <div>[00:00:02] DEFENSE LAYERS ARMED</div>
-                <div>[00:00:04] ML-MODEL: ISOLATION FOREST LOADED</div>
-                <div>[00:00:05] MONITORING TRAFFIC ON PORT 80/443</div>
-                <div className="animate-pulse text-green-400">_ SYSTEM STANDBY...</div>
-             </div>
-          </div>
-
         </div>
+
       </div>
     </div>
   );

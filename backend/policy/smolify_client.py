@@ -42,10 +42,26 @@ def generate_policy(threat_report: dict) -> dict:
     - affected_endpoint
     """
 
+    # Base action depends on risk and threat type.
+    # Goal: avoid using "block" as the universal hammer.
+    if threat_type == "token_replay":
+        default_action = "invalidate_token"
+    elif threat_type == "ddos":
+        # DDoS is usually multi-IP; protect the endpoint rather than whack-a-mole blocking.
+        default_action = "protect_endpoint"
+    elif threat_type == "rate_flood":
+        default_action = "rate_limit"
+    elif threat_type == "credential_stuffing":
+        default_action = "rate_limit"
+    elif threat_type == "endpoint_scraping":
+        default_action = "rate_limit"
+    else:
+        default_action = "rate_limit" if risk_score > 0.8 else "monitor"
+
     # Fake fallback for when API is unreachable
     fallback_response = {
         "rule_name": f"auto_mitigate_{threat_type}",
-        "action": "block" if risk_score > 0.8 else "rate_limit",
+        "action": default_action,
         "threshold": 100,
         "severity": "high" if risk_score > 0.8 else "medium",
         "affected_endpoint": endpoint
@@ -118,3 +134,4 @@ if __name__ == "__main__":
     }
     policy = generate_policy(fake_report)
     print("Generated Policy:", json.dumps(policy, indent=2))
+
