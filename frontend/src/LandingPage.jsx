@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import MatrixRain from './components/MatrixRain';
 import TiltCard from './components/TiltCard';
 import ScrambledText from './components/ScrambledText';
+import config from './config';
 import './LandingPage.css';
 
 const LandingPage = () => {
@@ -90,7 +91,7 @@ const LandingPage = () => {
 
   return (
     <div className="landing-container">
-      <MatrixRain colors={['#0F0']} />
+      <MatrixRain colors={config.MATRIX_RAIN.COLORS} opacity={config.MATRIX_RAIN.OPACITY} />
       
       <header className="landing-header">
         <ScrambledText
