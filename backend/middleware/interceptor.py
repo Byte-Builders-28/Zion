@@ -3,6 +3,7 @@ import asyncio
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from queue import Queue
+from threading import Lock
 
 from ml.detector import score_request
 from policy.smolify_client import generate_policy
@@ -12,9 +13,14 @@ from blockchain.algorand_logger import log_incident
 log_queue = Queue(maxsize=10000)
 last_alert_time = 0
 
+# Thread-safe counter
+total_threats = 0
+threat_lock = Lock()
+
 
 def background_threat_handler(score_result: dict, log_data: dict):
     global last_alert_time
+
     if time.time() - last_alert_time < 10:
         return
     last_alert_time = time.time()
@@ -22,28 +28,27 @@ def background_threat_handler(score_result: dict, log_data: dict):
     try:
         policy = generate_policy({
             "threat_type": score_result.get("threat_type"),
-            "endpoint":    log_data["endpoint"],
-            "ip":          log_data["ip"],
-            "risk_score":  score_result.get("risk_score")
+            "endpoint": log_data["endpoint"],
+            "ip": log_data["ip"],
+            "risk_score": score_result.get("risk_score")
         })
 
         print(policy)
 
-        # Execute the AI decision
         execute_action(policy.get("action", "monitor"), {
-            "ip":       log_data["ip"],
-            "token":    log_data.get("token"),
+            "ip": log_data["ip"],
+            "token": log_data.get("token"),
             "endpoint": log_data["endpoint"],
-            "risk":     score_result.get("risk_score", 0.0)
+            "risk": score_result.get("risk_score", 0.0)
         })
 
         log_incident({
-            "id":       str(int(time.time() * 1000)),
-            "type":     score_result.get("threat_type"),
+            "id": str(int(time.time() * 1000)),
+            "type": score_result.get("threat_type"),
             "endpoint": log_data["endpoint"],
-            "ip":       log_data["ip"],
-            "risk":     score_result.get("risk_score"),
-            "policy":   policy.get("rule_name", "unknown")
+            "ip": log_data["ip"],
+            "risk": score_result.get("risk_score"),
+            "policy": policy.get("rule_name", "unknown")
         })
 
         print(
@@ -62,6 +67,8 @@ def add_log(data: dict):
 
 
 async def interceptor(request: Request, call_next):
+    global total_threats
+
     start_time = time.time()
 
     # Support for proxies
@@ -85,25 +92,13 @@ async def interceptor(request: Request, call_next):
         )
 
     if is_blocked(ip):
-        print(f"[Interceptor] BLOCKED request from {ip}")
-        return JSONResponse(
-            status_code=403,
-            content={"detail": "IP blocked by Zion security policy"}
-        )
+        return JSONResponse(status_code=403, content={"detail": "IP blocked by Zion security policy"})
 
     if is_rate_limited(ip):
-        print(f"[Interceptor] RATE LIMITED request from {ip}")
-        return JSONResponse(
-            status_code=429,
-            content={"detail": "Rate limit exceeded — try again later"}
-        )
+        return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded — try again later"})
 
     if token and is_token_revoked(token):
-        print(f"[Interceptor] REVOKED TOKEN from {ip}")
-        return JSONResponse(
-            status_code=401,
-            content={"detail": "Token revoked by Zion security policy"}
-        )
+        return JSONResponse(status_code=401, content={"detail": "Token revoked by Zion security policy"})
 
     # ── Normal request flow ──
     response = await call_next(request)
@@ -112,18 +107,17 @@ async def interceptor(request: Request, call_next):
     payload_size = int(request.headers.get("content-length", 0))
 
     log_data = {
-        "endpoint":     endpoint_path,
-        "method":       request.method,
-        "ip":           ip,
-        "timestamp":    time.time(),
-        "latency":      process_time,
-        "token":        token,
+        "endpoint": endpoint_path,
+        "method": request.method,
+        "ip": ip,
+        "timestamp": time.time(),
+        "latency": process_time,
+        "token": token,
         "payload_size": payload_size,
-        "status_code":  response.status_code
+        "status_code": response.status_code
     }
 
     try:
-        # Skip threat scoring for docs endpoints
         if endpoint_path in {"/docs", "/openapi.json", "/redoc"}:
             score_result = {
                 "risk_score": 0.0,
@@ -135,10 +129,18 @@ async def interceptor(request: Request, call_next):
             score_result = score_request(log_data)
 
         log_data["score_result"] = score_result
+
         print(
-            f"[Interceptor] Score: {score_result.get('risk_score')} | Flag: {score_result.get('flag')} | Type: {score_result.get('threat_type')}")
+            f"[Interceptor] Score: {score_result.get('risk_score')} | "
+            f"Flag: {score_result.get('flag')} | "
+            f"Type: {score_result.get('threat_type')}"
+        )
 
         if score_result.get("flag"):
+            # thread-safe increment
+            with threat_lock:
+                total_threats += 1
+
             asyncio.create_task(
                 asyncio.to_thread(background_threat_handler,
                                   score_result, log_data)
