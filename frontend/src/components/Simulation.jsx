@@ -14,106 +14,79 @@ const vectors = [
 const Simulation = () => {
   const [active, setActive] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [terminalLogs, setTerminalLogs] = useState([]);
   const [dashboardData, setDashboardData] = useState({
     total_threats: 0,
-    rate_limited_ips: new Set(),
-    ips_blocked: new Set(),
+    rate_limited_ips: 0,
+    ips_blocked: 0,
     revoked_tokens_count: 0
   });
   const [overallRisk, setOverallRisk] = useState(0);
   const wsRef = useRef(null);
-  const logHistoryRef = useRef([]);
 
-  // WebSocket connection for dashboard data
+  // HTTP GET to dashboard/stats as default method
   useEffect(() => {
-    const connectWebSocket = () => {
+    const fetchDashboardStats = async () => {
       try {
         const backendUrl = config.BACKEND_BASE_URL;
-        const wsUrl = backendUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/dashboard/logs';
-        wsRef.current = new WebSocket(wsUrl);
-        
-        wsRef.current.onopen = () => {
-          console.log('WebSocket connected to dashboard logs');
-        };
-        
-        wsRef.current.onmessage = (event) => {
-          try {
-            const logEntry = JSON.parse(event.data);
-            
-            // Store log entry for processing
-            logHistoryRef.current.push(logEntry);
-            
-            // Keep only last 1000 entries for processing
-            if (logHistoryRef.current.length > 1000) {
-              logHistoryRef.current = logHistoryRef.current.slice(-1000);
-            }
-            
-            // Calculate aggregated metrics from log entries
-            const aggregatedData = calculateAggregatedMetrics(logHistoryRef.current);
-            setDashboardData(aggregatedData);
-            
-            // Calculate overall risk based on aggregated data
-            const riskScore = calculateRiskScore(aggregatedData);
-            setOverallRisk(riskScore);
-            
-          } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
-          }
-        };
-        
-        wsRef.current.onclose = () => {
-          console.log('WebSocket disconnected, attempting to reconnect...');
-          setTimeout(connectWebSocket, 3000); // Reconnect after 3 seconds
-        };
-        
-        wsRef.current.onerror = (error) => {
-          console.error('WebSocket error:', error);
-        };
+        const response = await fetch(`${backendUrl}/dashboard/stats`);
+        if (response.ok) {
+          const data = await response.json();
+          setDashboardData(data);
+          
+          // Calculate overall risk based on received data
+          const riskScore = calculateRiskScore(data);
+          setOverallRisk(riskScore);
+        }
       } catch (error) {
-        console.error('Failed to connect WebSocket:', error);
+        console.error('Failed to fetch dashboard stats:', error);
       }
     };
-    
-    connectWebSocket();
-    
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
+
+    fetchDashboardStats();
+    // Refresh every 5 seconds
+    const interval = setInterval(fetchDashboardStats, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Calculate aggregated metrics from individual log entries
-  const calculateAggregatedMetrics = (logEntries) => {
-    const rateLimitedIps = new Set();
-    const blockedIps = new Set();
-    let totalThreats = 0;
-    let revokedTokens = 0;
-    
-    logEntries.forEach(entry => {
-      // Count total requests
-      totalThreats++;
+  // Terminal WebSocket connection
+  const connectTerminalWebSocket = (attackType) => {
+    try {
+      const backendUrl = config.BACKEND_BASE_URL;
+      const wsUrl = backendUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/dashboard/logs';
+      wsRef.current = new WebSocket(wsUrl);
       
-      // Check if IP is rate limited (status 429) or blocked (status 403)
-      if (entry.status_code === 429) {
-        rateLimitedIps.add(entry.ip);
-      }
-      if (entry.status_code === 403) {
-        blockedIps.add(entry.ip);
-      }
+      wsRef.current.onopen = () => {
+        console.log('Terminal WebSocket connected');
+        setTerminalLogs([`[${new Date().toLocaleTimeString()}] CONNECTED TO TERMINAL - DOING ${attackType.toUpperCase()} SIMULATION`]);
+      };
       
-      // Check for revoked tokens (token-based authentication failures)
-      if (entry.status_code === 401 && entry.token) {
-        revokedTokens++;
-      }
-    });
-    
-    return {
-      total_threats: totalThreats,
-      rate_limited_ips: rateLimitedIps.size,
-      ips_blocked: blockedIps.size,
-      revoked_tokens_count: revokedTokens
-    };
+      wsRef.current.onmessage = (event) => {
+        try {
+          const logEntry = JSON.parse(event.data);
+          
+          // Format log entry for terminal display (same as dashboard)
+          const formattedLog = `${logEntry.method}    ${logEntry.ip}    ${logEntry.status}    [${logEntry.score_result?.threat_type || 'normal'}]`;
+          setTerminalLogs(prevLogs => [formattedLog, ...prevLogs].slice(0, 50));
+          
+        } catch (error) {
+          console.error('Error parsing terminal WebSocket message:', error);
+        }
+      };
+      
+      wsRef.current.onclose = () => {
+        console.log('Terminal WebSocket disconnected');
+        setTerminalLogs(prevLogs => [...prevLogs, `[${new Date().toLocaleTimeString()}] TERMINAL DISCONNECTED`]);
+      };
+      
+      wsRef.current.onerror = (error) => {
+        console.error('Terminal WebSocket error:', error);
+        setTerminalLogs(prevLogs => [...prevLogs, `[${new Date().toLocaleTimeString()}] TERMINAL ERROR`]);
+      };
+    } catch (error) {
+      console.error('Failed to connect terminal WebSocket:', error);
+      setTerminalLogs([`[${new Date().toLocaleTimeString()}] FAILED TO CONNECT TO TERMINAL`]);
+    }
   };
 
   // Calculate risk score based on dashboard metrics (0 to 1)
@@ -196,23 +169,9 @@ const Simulation = () => {
     if (active) return;
     setActive(v.id);
     setLogs([]); // Clear logs for new run
-
-    const sequence = generateDynamicSequence(v.id);
     
-    sequence.forEach((item) => {
-      setTimeout(() => {
-        setLogs((prev) => {
-          // Keep last 50 logs instead of 20 to prevent cutting off the simulation mid-way
-          const next = [item.text, ...prev];
-          return next.slice(0, 50);
-        });
-        
-        // Finish condition
-        if (item.text.includes('✓')) {
-          setActive(null);
-        }
-      }, item.delay);
-    });
+    // Connect to WebSocket and display real logs instead of simulation
+    connectTerminalWebSocket(v.id);
   };
 
   return (
@@ -272,21 +231,20 @@ const Simulation = () => {
           </div>
         </div>
 
-        {/* Live log */}
-        <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+        {/* Simulation console */}
+        <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', marginTop: '1.5rem' }}>
           <div className="panel-title">SIMULATION CONSOLE</div>
           <div style={{ fontFamily: 'Share Tech Mono', fontSize: '0.72rem', display: 'flex', flexDirection: 'column', gap: '0.3rem', overflowY: 'auto', flex: 1, maxHeight: '320px' }}>
-            {logs.length === 0 ? (
+            {terminalLogs.length === 0 ? (
               <span style={{ color: 'rgba(0,255,0,0.3)', marginTop: '1rem' }}>{'>'} SELECT A VECTOR TO BEGIN SIMULATION...</span>
             ) : (
-              logs.map((l, i) => {
+              terminalLogs.map((log, i) => {
                 let color = 'rgba(0, 255, 0, 0.6)'; // default green
-                if (l.includes('✓')) color = '#0f0';
-                if (l.includes('⚠️')) color = '#ffeb3b';
-                if (l.includes('⛔')) color = '#f44336';
-                if (l.includes('⛓️')) color = '#00bcd4';
-                if (l.includes('>')) color = 'rgba(255, 255, 255, 0.7)';
-                return <div key={i} style={{ color }}>{l}</div>;
+                if (log.includes('CONNECTED')) color = '#0f0';
+                if (log.includes('DISCONNECTED')) color = '#fa0';
+                if (log.includes('ERROR')) color = '#f55';
+                if (log.includes('POST') || log.includes('GET')) color = 'rgba(255, 255, 255, 0.7)';
+                return <div key={i} style={{ color }}>{log}</div>;
               })
             )}
           </div>
