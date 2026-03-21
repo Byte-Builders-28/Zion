@@ -93,8 +93,16 @@ const LandingPage = () => {
       <MatrixRain colors={['#0F0']} />
       
       <header className="landing-header">
-        <h1 className="glitch" data-text="ZION">ZION</h1>
-        <p className="subtitle">Secure connection established. Next-gen Threat Detection.</p>
+        <ScrambledText
+          className="glitch scrambled-text-zion"
+          radius={100}
+          duration={1.2}
+          speed={0.5}
+          scrambleChars=".:"
+        >
+          ZION
+        </ScrambledText>
+        <p className="subtitle">Secure connection established.</p>
         <button className="get-started-btn" onClick={() => navigate('/dashboard')}>
           GET STARTED
           <span className="btn-glow"></span>
