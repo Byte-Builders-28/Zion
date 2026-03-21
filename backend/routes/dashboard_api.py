@@ -1,82 +1,43 @@
-from fastapi import APIRouter
-from middleware.interceptor import log_queue
-from blockchain.algorand_logger import log_incident_async
-from ml.detector import score_request
-import pandas as pd
+import asyncio
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from policy.executor import get_enforcement_state
 
-from policy.executor import get_enforcement_state\
+from middleware.interceptor import total_threats, log_queue
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
-incident_counter = 1
-
-
-def queue_to_list():
-    items = []
-    temp = []
-    while not log_queue.empty():
-        item = log_queue.get()
-        items.append(item)
-        temp.append(item)
-    for item in temp:
-        log_queue.put(item)
-    return items
-
 
 @router.get("/stats")
-def get_stats():
-    logs = queue_to_list()
-    if not logs:
-        return {"msg": "no data"}
-    df = pd.DataFrame(logs)
-    top_ips = df.groupby("ip").size().sort_values(ascending=False).head(5)
+async def get_dashboard_stats():
+    state = get_enforcement_state()
+
+    ips_blocked = state.get("blocked_ips", 0)
+    rate_limited_ips = state.get("rate_limited_ips", 0)
+    revoked_tokens_count = state.get("revoked_tokens_count", 0)
+
     return {
-        "total_requests": len(df),
-        "top_ips": top_ips.to_dict()
+        "ips_blocked": ips_blocked,
+        "rate_limited_ips": rate_limited_ips,
+        "revoked_tokens_count": revoked_tokens_count,
+        "total_threats": total_threats
     }
 
 
-@router.get("/endpoints")
-def endpoint_stats():
-    logs = queue_to_list()
-    if not logs:
-        return {"msg": "no data"}
-    df = pd.DataFrame(logs)
-    endpoints = df.groupby("endpoint").size()
-    return {
-        "endpoint_usage": endpoints.to_dict()
-    }
+@router.websocket("/logs")
+async def logs_stream(websocket: WebSocket):
+    await websocket.accept()
 
+    try:
+        while True:
+            # send logs if available
+            if not log_queue.empty():
+                log = log_queue.get()
+                await websocket.send_json(log)
+            else:
+                await asyncio.sleep(0.1)
 
-@router.get("/raw_logs")
-def get_raw_logs():
-    return queue_to_list()
-
-
-@router.post("/analyze")
-async def analyze(req: dict):
-    global incident_counter
-
-    # Step 1 — ML scores the request
-    result = score_request(req)
-
-    # Step 2 — threat flagged → log to Algorand + Appwrite
-    if result.get("flag"):
-        log_incident_async({
-            "id":       f"SG-{incident_counter:03d}",
-            "type":     result.get("threat_type"),
-            "endpoint": req.get("endpoint", "/"),
-            "ip":       req.get("ip", "0.0.0.0"),
-            "risk":     result.get("risk_score"),
-            "policy":   "auto_flagged"
-        })
-        incident_counter += 1
-
-    return result
-
-
-
-@router.get("/enforcement")
-def get_enforcement():
-    """Returns currently blocked IPs, rate limited IPs, revoked tokens."""
-    return get_enforcement_state()
+    except WebSocketDisconnect:
+        print("[WebSocket] Client disconnected")
+    except Exception as e:
+        print(f"[WebSocket Error] {e}")
+# router webstcoket? need to send termial logs to display in frontend
