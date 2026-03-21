@@ -85,10 +85,12 @@ async def interceptor(request: Request, call_next):
     endpoint_path = request.url.path
 
     if is_endpoint_under_attack(endpoint_path):
-        print(f"[Interceptor] BLOCKED request to {endpoint_path} (Endpoint under DDoS attack)")
+        print(
+            f"[Interceptor] BLOCKED request to {endpoint_path} (Endpoint under attack)")
         return JSONResponse(
             status_code=503,
-            content={"detail": "Service currently under heavy load — dropping traffic"}
+            content={
+                "detail": "Service currently under heavy load — dropping traffic"}
         )
 
     if is_blocked(ip):
@@ -118,7 +120,11 @@ async def interceptor(request: Request, call_next):
     }
 
     try:
-        if endpoint_path in {"/docs", "/openapi.json", "/redoc"}:
+
+        route = request.scope.get("route")
+        tags = getattr(route, "tags", []) if route else []
+
+        if (endpoint_path in {"/docs", "/openapi.json", "/redoc"} or "Dashboard" in tags):
             score_result = {
                 "risk_score": 0.0,
                 "threat_type": "anomaly",
@@ -126,6 +132,7 @@ async def interceptor(request: Request, call_next):
                 "flag": False,
             }
         else:
+
             score_result = score_request(log_data)
 
         log_data["score_result"] = score_result
@@ -137,12 +144,9 @@ async def interceptor(request: Request, call_next):
         )
 
         if score_result.get("flag"):
-            print(total_threats)
             # thread-safe increment
             with threat_lock:
                 total_threats += 1
-            
-            print(total_threats)
 
             asyncio.create_task(
                 asyncio.to_thread(background_threat_handler,

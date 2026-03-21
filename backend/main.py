@@ -3,7 +3,7 @@ import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
-from routes import dashboard_api, events, simulate, anomalies, rl_routes
+from routes import dashboard_api, simulate, anomalies, rl_routes
 from routes.chain_routes import router as chain_router
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,11 +25,11 @@ app.middleware("http")(interceptor)
 # Routers
 
 app.include_router(dashboard_api.router)
-app.include_router(events.router)
 app.include_router(simulate.router)
 app.include_router(anomalies.router)
 app.include_router(chain_router)
 app.include_router(rl_routes.router)
+
 
 @app.get("/")
 def root():
