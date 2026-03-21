@@ -94,6 +94,8 @@ async def interceptor(request: Request, call_next):
     payload_size = int(request.headers.get("content-length", 0))
     endpoint_path = request.url.path
 
+    endpoint_path = request.url.path
+
     log_data = {
         "endpoint":     endpoint_path,
         "method":       request.method,
