@@ -14,21 +14,68 @@ const Simulation = () => {
   const [active, setActive] = useState(null);
   const [logs, setLogs] = useState([]);
 
+  const generateDynamicSequence = (vectorId) => {
+    const time = () => new Date().toLocaleTimeString();
+    let seq = [
+      { text: `[${time()}] INITIATING ${vectorId.toUpperCase()}...`, delay: 100 },
+      { text: `[${time()}] TARGET: /api/v1/ | THREADS: 32 | ALGORITHM: ISOLATION_FOREST`, delay: 600 },
+      { text: `[${time()}] SIMULATION CONNECTED — MONITORING REAL-TIME RESPONSE`, delay: 1200 },
+    ];
+
+    if (vectorId === 'rate_flood') {
+      for (let i = 0; i < 5; i++) {
+        seq.push({ text: `[${time()}] > GET /api/v1/test HTTP/1.1 200 OK`, delay: 1300 + (i * 100) });
+      }
+      seq.push({ text: `[${time()}] ⚠️ ML DETECT: requests_per_min = 180 -> rate_flood`, delay: 1900 });
+      seq.push({ text: `[${time()}] ⛔ POLICY ENGINE: IP BLOCKED (Rule: Block_Rate_Flood)`, delay: 2200 });
+      seq.push({ text: `[${time()}] > GET /api/v1/test HTTP/1.1 403 FORBIDDEN`, delay: 2500 });
+      seq.push({ text: `[${time()}] ⛓️ LOGGING TO ALGORAND BLOCKCHAIN -> TX: ABC...`, delay: 3000 });
+    } else if (vectorId === 'cred_stuff') {
+      seq.push({ text: `[${time()}] > POST /api/v1/login (admin/admin) 401 UNAUTHORIZED`, delay: 1400 });
+      seq.push({ text: `[${time()}] > POST /api/v1/login (admin/1234) 401 UNAUTHORIZED`, delay: 1600 });
+      seq.push({ text: `[${time()}] > POST /api/v1/login (admin/pass) 401 UNAUTHORIZED`, delay: 1800 });
+      seq.push({ text: `[${time()}] ⚠️ ML DETECT: failed_logins > 5 -> credential_stuffing`, delay: 2100 });
+      seq.push({ text: `[${time()}] ⛔ POLICY ENGINE: IP BLOCKED (Rule: Halt_Cred_Stuffing)`, delay: 2400 });
+      seq.push({ text: `[${time()}] > POST /api/v1/login (admin/qwerty) 403 FORBIDDEN`, delay: 2600 });
+      seq.push({ text: `[${time()}] ⛓️ LOGGING INCIDENT TO ALGORAND SMART CONTRACT`, delay: 3200 });
+    } else if (vectorId === 'token_replay') {
+      seq.push({ text: `[${time()}] > GET /api/v1/data (Token: eyJhb...) [IP: 104.12.x] 200 OK`, delay: 1400 });
+      seq.push({ text: `[${time()}] > GET /api/v1/data (Token: eyJhb...) [IP: 44.55.x] 200 OK`, delay: 1700 });
+      seq.push({ text: `[${time()}] > GET /api/v1/data (Token: eyJhb...) [IP: 12.8.x] 200 OK`, delay: 2000 });
+      seq.push({ text: `[${time()}] ⚠️ ML DETECT: token_reuse_count = 3 -> token_replay`, delay: 2400 });
+      seq.push({ text: `[${time()}] ⛔ POLICY ENGINE: TOKEN REVOKED GLOBALLY`, delay: 2700 });
+      seq.push({ text: `[${time()}] > GET /api/v1/data (Token: eyJhb...) [IP: 88.2.x] 401 UNAUTHORIZED`, delay: 3000 });
+    } else {
+      seq.push({ text: `[${time()}] > PROBING VULNERABILITY VECTORS...`, delay: 1400 });
+      seq.push({ text: `[${time()}] ⚠️ ML DETECT: anomaly detected (risk_score = 0.85)`, delay: 2200 });
+      seq.push({ text: `[${time()}] ⛔ IP FLAGGED FOR REVIEW`, delay: 2600 });
+    }
+
+    seq.push({ text: `[${time()}] ✓ SIMULATION COMPLETE — ZERO BYPASSES DETECTED`, delay: 4000 });
+    return seq;
+  };
+
   const run = (v) => {
+    if (active) return;
     setActive(v.id);
-    setLogs(prev => [
-      `[${new Date().toLocaleTimeString()}] INITIATING ${v.label}...`,
-      `[${new Date().toLocaleTimeString()}] TARGET: /api/v1/  THREADS: 32`,
-      `[${new Date().toLocaleTimeString()}] SIMULATION RUNNING — MONITORING RESPONSE`,
-      ...prev
-    ].slice(0, 20));
-    setTimeout(() => {
-      setLogs(prev => [
-        `[${new Date().toLocaleTimeString()}] ✓ ${v.label} COMPLETE — 0 BYPASSES DETECTED`,
-        ...prev
-      ].slice(0, 20));
-      setActive(null);
-    }, 2000);
+    setLogs([]); // Clear logs for new run
+
+    const sequence = generateDynamicSequence(v.id);
+    
+    sequence.forEach((item) => {
+      setTimeout(() => {
+        setLogs((prev) => {
+          // Keep last 50 logs instead of 20 to prevent cutting off the simulation mid-way
+          const next = [item.text, ...prev];
+          return next.slice(0, 50);
+        });
+        
+        // Finish condition
+        if (item.text.includes('✓')) {
+          setActive(null);
+        }
+      }, item.delay);
+    });
   };
 
   return (
@@ -78,9 +125,15 @@ const Simulation = () => {
             {logs.length === 0 ? (
               <span style={{ color: 'rgba(0,255,0,0.3)', marginTop: '1rem' }}>{'>'} SELECT A VECTOR TO BEGIN SIMULATION...</span>
             ) : (
-              logs.map((l, i) => (
-                <div key={i} style={{ color: l.includes('✓') ? '#0f0' : 'rgba(0,255,0,0.6)' }}>{l}</div>
-              ))
+              logs.map((l, i) => {
+                let color = 'rgba(0, 255, 0, 0.6)'; // default green
+                if (l.includes('✓')) color = '#0f0';
+                if (l.includes('⚠️')) color = '#ffeb3b';
+                if (l.includes('⛔')) color = '#f44336';
+                if (l.includes('⛓️')) color = '#00bcd4';
+                if (l.includes('>')) color = 'rgba(255, 255, 255, 0.7)';
+                return <div key={i} style={{ color }}>{l}</div>;
+              })
             )}
           </div>
           {active && (

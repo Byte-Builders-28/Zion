@@ -73,13 +73,27 @@ const LandingPage = () => {
     }
   ];
 
+  const capabilities = [
+    { label: 'Monitoring & Tracking', value: 'Traffic rate, Request payloads, Unique IPs, Endpoint spread, Token usage, Failed login streaks' },
+    { label: 'Threats Defeated', value: 'Rate Floods, Credential Stuffing, Token Replays, Automated Scraping, DDoS Probes' },
+    { label: 'Automated Response', value: 'Real-time ML scoring -> Dynamic Policy Generation -> Smart IP Blocking' },
+    { label: 'Incident Integrity', value: 'Decentralized evidence logging via Algorand Testnet for secure, tamper-proof audits' }
+  ];
+
+  const flowSteps = [
+    { step: '01', title: 'TRAFFIC INTERCEPTION', desc: 'FastAPI middleware intercepts every HTTP request, extracting core features (IP, token, payload, endpoint).' },
+    { step: '02', title: 'ML DETECTION', desc: 'Sliding windows track metrics in memory. An Isolation Forest model identifies statistical anomalies dynamically.' },
+    { step: '03', title: 'THREAT CLASSIFICATION', desc: 'Heuristics label high-risk clusters (e.g. Rate Flood, Credential Stuffing, Token Replay).' },
+    { step: '04', title: 'BLOCKCHAIN AUDIT', desc: 'Critical incidents trigger smart policies via Smolify and get permanently logged to the Algorand blockchain.' }
+  ];
+
   return (
     <div className="landing-container">
       <MatrixRain colors={['#0F0']} />
       
       <header className="landing-header">
         <h1 className="glitch" data-text="ZION">ZION</h1>
-        <p className="subtitle">Secure connection established.</p>
+        <p className="subtitle">Secure connection established. Next-gen Threat Detection.</p>
         <button className="get-started-btn" onClick={() => navigate('/dashboard')}>
           GET STARTED
           <span className="btn-glow"></span>
@@ -99,6 +113,28 @@ const LandingPage = () => {
       </div>
 
       <div className="features-section">
+        <h2 className="section-title">SYSTEM ARCHITECTURE</h2>
+        <div className="flow-grid">
+          {flowSteps.map((f, i) => (
+            <div key={i} className="flow-step">
+              <span className="step-num">{f.step}</span>
+              <h4>{f.title}</h4>
+              <p>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <h2 className="section-title" style={{ marginTop: '4rem' }}>CAPABILITIES & TRACKING</h2>
+        <div className="capabilities-grid">
+          {capabilities.map((c, i) => (
+            <div key={i} className="capability-row">
+              <div className="capability-label">[{c.label}]</div>
+              <div className="capability-value">{c.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <h2 className="section-title" style={{ marginTop: '4rem' }}>CORE COMPONENTS</h2>
         <div className="features-grid">
           {features.map((feature, index) => (
             <div key={index} className="feature-box">
@@ -111,7 +147,7 @@ const LandingPage = () => {
       </div>
 
       <footer className="landing-footer">
-        <p>V 1.0.0 // MATRIX PROTOCOL</p>
+        <p>V 1.0.0 // MATRIX PROTOCOL // ZION CYBERSECURITY</p>
       </footer>
     </div>
   );
