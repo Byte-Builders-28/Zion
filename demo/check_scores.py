@@ -4,8 +4,8 @@ import json
 def main():
     resp = requests.get("http://127.0.0.1:8000/dashboard/raw_logs")
     logs = resp.json()
-    if isinstance(logs, dict) and logs.get("msg") == "no data":
-        print("No logs yet")
+    if isinstance(logs, dict):
+        print("Response:", logs)
         return
         
     print(f"Total logs: {len(logs)}")
