@@ -6,21 +6,21 @@ Zion is a local-first cyber defense demo that combines:
 - **FastAPI** request interception + enforcement gates
 - **ML anomaly scoring** (Isolation Forest) with a deterministic rules layer for **human-readable threat types**
 - A **policy engine** (Smolify/HuggingFace optional) that turns detections into mitigation actions
-- Optional **incident logging to Algorand TestNet** and **storage via Appwrite**
+- Optional **incident logging to Algorand TestNet** and **storage via Appwrite** (auto-disabled when env vars are not set)
 
-This repo includes a React/Vite dashboard for real-time visibility and several attack simulation scripts (token replay, credential stuffing, DDoS-style floods).
+This repo includes a React/Vite dashboard for real-time visibility and several attack simulation scripts (token replay, credential stuffing, DDoS-style floods, endpoint scraping, parameter fuzzing).
 
 ---
 
 ## Features
 
-- **Threat typing (distinct categories)**: `ddos`, `rate_flood`, `token_replay`, `credential_stuffing`, `endpoint_scraping`, `anomaly`
+- **Threat typing (distinct categories)**: `ddos`, `rate_flood`, `token_replay`, `credential_stuffing`, `endpoint_scraping`, `param_fuzzing`, `anomaly`
 - **Mitigations are not “block IP only”**:
   - DDoS-like traffic → **protect endpoint** (drop traffic with 503)
   - Token replay → **revoke token** (401 thereafter)
   - Rate floods / stuffing / scraping → **rate limit** (429)
 - **Real-time logs** via WebSocket stream to the frontend
-- **On-chain logging** (Algorand TestNet) for flagged incidents (optional but enabled by default)
+- **On-chain logging** (Algorand TestNet) for flagged incidents (optional; enabled only when env vars are set)
 
 ---
 
@@ -51,7 +51,7 @@ This repo includes a React/Vite dashboard for real-time visibility and several a
 
 - `backend/` — FastAPI app, ML detector, policy executor, blockchain logging
 - `frontend/` — React/Vite UI (dashboard + simulation screens)
-- `backend/attack/scenarios/` — attack simulations (async floods, token replay, credential stuffing)
+- `backend/attack/scenarios/` — attack simulations (token replay, stuffing, DDoS flood, endpoint scrape, param fuzzing)
 - `demo/` — traffic generators + quick log inspection
 - `study/` — threat type explanations
 
@@ -62,7 +62,7 @@ This repo includes a React/Vite dashboard for real-time visibility and several a
 - **Python 3.10+** (Windows: `py` launcher is fine)
 - **Node.js 18+** (recommended) + npm
 
-If you enable on-chain logging and cloud persistence (default behavior), you also need:
+If you enable on-chain logging and cloud persistence, you also need:
 
 - An **Algorand TestNet wallet** (mnemonic + address)
 - An **Appwrite** project (TablesDB) and API key
@@ -201,6 +201,32 @@ Notes:
 - Some requests can still trigger per-IP rate limiting (429) depending on timing and sliding-window state.
 - Endpoint protection is the primary DDoS mitigation in this demo.
 
+### 4) Endpoint scraping
+
+Simulates an attacker enumerating many distinct endpoints quickly.
+
+```powershell
+py backend/attack/scenarios/endpoint_scrape.py
+```
+
+Expected behavior:
+
+- Detection: `endpoint_scraping`
+- Mitigation: **rate_limit** (429)
+
+### 5) Parameter fuzzing
+
+Simulates probing a small set of endpoints at high rate while varying input.
+
+```powershell
+py backend/attack/scenarios/param_fuzzing.py
+```
+
+Expected behavior:
+
+- Detection: `param_fuzzing`
+- Mitigation: **rate_limit** (429)
+
 ---
 
 ## Demo helpers
@@ -276,6 +302,7 @@ In short:
 - `token_replay`: token reused across IPs → revoke token
 - `credential_stuffing`: repeated failed logins → rate limit
 - `endpoint_scraping`: high endpoint variety → rate limit
+- `param_fuzzing`: high-rate probing of a small endpoint set → rate limit
 - `anomaly`: doesn’t match a named pattern strongly
 
 ---

@@ -1,15 +1,9 @@
 import json
 import os
-import base64
 import threading
 
-from algosdk import mnemonic, transaction
-from algosdk.error import WrongMnemonicLengthError
-from algosdk.v2client import algod
 from dotenv import load_dotenv
 from pathlib import Path
-
-from db.store import save_chain_record
 
 # Load environment variables from backend/.env (regardless of current working directory)
 DOTENV_PATH = Path(__file__).resolve().parents[1] / ".env"
@@ -18,37 +12,49 @@ load_dotenv(dotenv_path=DOTENV_PATH)
 # Fallback: allow env vars to be set via the default .env location too
 load_dotenv()
 
-# ── connect to Algorand testnet node ──────────────────────────
+# ── optional Algorand config ───────────────────────────────────
+ALGOD_ENABLED = False
 ALGOD_ADDRESS = "https://testnet-api.algonode.cloud"
 ALGOD_TOKEN = ""  # Algonode doesn't need a token
-client = algod.AlgodClient(ALGOD_TOKEN, ALGOD_ADDRESS)
 
-# ── load wallet from .env ─────────────────────────────────────
+client = None
+private_key = None
+address = None
+
 mn = os.getenv("ALGO_MNEMONIC")
-if not mn:
-    raise RuntimeError(
-        f"ALGO_MNEMONIC is not set. Create a .env file at {DOTENV_PATH} with ALGO_MNEMONIC and ALGO_ADDRESS."
-    )
+addr = os.getenv("ALGO_ADDRESS")
 
-try:
-    private_key = mnemonic.to_private_key(mn)
-except WrongMnemonicLengthError as e:
-    raise RuntimeError(
-        f"ALGO_MNEMONIC looks invalid (must be 25 words).\n"
-        f"Please update the file at {DOTENV_PATH} with the mnemonic output from generate_wallet.py.\n"
-        f"Original error: {e}"
-    ) from e
+if mn and addr:
+    try:
+        from algosdk import mnemonic, transaction
+        from algosdk.error import WrongMnemonicLengthError
+        from algosdk.v2client import algod
 
-address = os.getenv("ALGO_ADDRESS")
-if not address:
-    raise RuntimeError(
-        f"ALGO_ADDRESS is not set. Create a .env file at {DOTENV_PATH} with ALGO_MNEMONIC and ALGO_ADDRESS."
-    )
+        client = algod.AlgodClient(ALGOD_TOKEN, ALGOD_ADDRESS)
+        private_key = mnemonic.to_private_key(mn)
+        address = addr
+        ALGOD_ENABLED = True
+    except WrongMnemonicLengthError as e:
+        print(
+            f"[ALGO] Disabled: ALGO_MNEMONIC looks invalid (must be 25 words). "
+            f"Update {DOTENV_PATH}. Error: {e}"
+        )
+        ALGOD_ENABLED = False
+    except Exception as e:
+        print(f"[ALGO] Disabled: failed to initialize client: {e}")
+        ALGOD_ENABLED = False
+else:
+    # Keep disabled by default for local runs.
+    ALGOD_ENABLED = False
 
 
 def _submit_to_chain(incident: dict):
     """Internal background worker; writes to Algorand and local SQLite."""
     try:
+        if not ALGOD_ENABLED:
+            # No-op when Algorand credentials are not configured.
+            return
+
         note = json.dumps({
             "id": incident.get("id"),
             "type": incident.get("type"),
@@ -75,6 +81,8 @@ def _submit_to_chain(incident: dict):
 
         explorer_url = f"https://testnet.algoexplorer.io/tx/{tx_id}"
 
+        # Optional Appwrite persistence (falls back to in-memory if not configured).
+        from db.store import save_chain_record
         save_chain_record({
             "incident_id": incident.get("id"),
             "tx_id": tx_id,
@@ -104,12 +112,18 @@ def get_chain_history(limit=20) -> list:
 
 def log_incident(incident: dict) -> dict:
     """Legacy sync call preserved in case some import uses it."""
+    if not ALGOD_ENABLED:
+        return {"success": False, "disabled": True}
     _submit_to_chain(incident)
-    return {"success": True}
+    return {"success": True, "disabled": False}
 
 
 def get_balance() -> float:
     """Return the wallet balance in ALGO (testnet)."""
+    if not ALGOD_ENABLED:
+        raise RuntimeError(
+            f"Algorand integration disabled. Set ALGO_MNEMONIC and ALGO_ADDRESS in {DOTENV_PATH} to enable."
+        )
     acct = client.account_info(address)
     micro_algos = acct.get("amount", 0)
     return micro_algos / 1_000_000

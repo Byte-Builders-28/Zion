@@ -98,17 +98,32 @@ Concretely (approximate rules):
 
 ---
 
-## distributed_attack
+## param_fuzzing
 
 **What it means**
-- Potentially coordinated activity across many IPs, often sharing credentials or tokens.
+- High-rate probing of a *small/moderate* set of endpoints while varying input values.
 
 **When it is used**
-- `unique_ips` is large for a given token or pattern, suggesting fan-out across many sources.
+- Request rate is elevated, but endpoint variety is not as extreme as endpoint scraping.
 
 **Typical examples**
-- A token or key used from many different IPs (botnet-style behavior).
-- Coordinated scanning from a wide range of addresses.
+- Repeatedly hitting a handful of endpoints with changing query/body values to trigger edge cases.
+- Probing parameter boundaries (large numbers, weird strings) at high speed.
+
+---
+
+## ddos
+
+**What it means**
+- High-volume traffic hitting an endpoint from multiple IPs (fan-in), suggesting distributed flood behavior.
+
+**When it is used**
+- `requests_per_min` is high and
+- `unique_ips` contributing to the activity is elevated.
+
+**Typical examples**
+- Many spoofed IPs flooding `/test` (or another endpoint) concurrently.
+- Botnet-style high fan-in traffic to a specific API.
 
 ---
 
