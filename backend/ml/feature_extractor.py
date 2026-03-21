@@ -3,7 +3,9 @@ import time
 
 # In-memory sliding window — tracks recent requests per IP
 request_window = defaultdict(list)    # ip → [timestamps]
+endpoint_window = defaultdict(list)   # endpoint → [timestamps]
 token_ip_map   = defaultdict(set)     # token → set of IPs
+endpoint_ip_map = defaultdict(set)    # endpoint → set of IPs
 failed_login_window = defaultdict(list)  # ip → [failed login timestamps]
 endpoint_hits  = defaultdict(set)     # ip → set of endpoints
 
@@ -36,15 +38,21 @@ def extract(request: dict) -> list[float]:
     payload  = request.get("payload_size", 0)
     status   = request.get("status_code", 200)
     ts       = request.get("timestamp", time.time())
-
+ 
     # Update sliding window (last 60 seconds)
     now = time.time()
     request_window[ip].append(now)
     request_window[ip] = [t for t in request_window[ip] if now - t < 60]
 
+    endpoint_window[endpoint].append(now)
+    endpoint_window[endpoint] = [t for t in endpoint_window[endpoint] if now - t < 60]
+
     # Track token reuse across IPs
     if token:
         token_ip_map[token].add(ip)
+
+    # Track unique IPs per endpoint
+    endpoint_ip_map[endpoint].add(ip)
 
     # Track failed logins in a time window (e.g., last 10 minutes)
     if status in (401, 403) and "login" in endpoint:
@@ -58,8 +66,8 @@ def extract(request: dict) -> list[float]:
     endpoint_hits[ip].add(endpoint)
 
     return [
-        len(request_window[ip]),                 # requests_per_min
-        len(token_ip_map.get(token, {ip})),      # unique_ips using this token
+        max(len(request_window[ip]), len(endpoint_window[endpoint])), # requests_per_min (incorporate global rate for DDoS)
+        max(len(token_ip_map.get(token, {ip})), len(endpoint_ip_map[endpoint])), # unique_ips using token OR hitting endpoint
         failed_count,                            # failed_logins (recent window)
         payload,                                 # payload_size_bytes
         len(token_ip_map.get(token, set())),     # token_reuse_count
@@ -70,6 +78,8 @@ def extract(request: dict) -> list[float]:
 def reset_state():
     "Call this between demo runs to clear memory"
     request_window.clear()
+    endpoint_window.clear()
     token_ip_map.clear()
+    endpoint_ip_map.clear()
     failed_login_window.clear()
     endpoint_hits.clear()

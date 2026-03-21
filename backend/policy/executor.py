@@ -3,6 +3,7 @@ import time
 blocked_ips = set()
 rate_limited_ips = {}
 revoked_tokens = set()
+rate_limited_endpoints = {}
 
 
 def execute_action(action: str, context: dict) -> dict:
@@ -10,6 +11,15 @@ def execute_action(action: str, context: dict) -> dict:
     token = context.get("token")
     endpoint = context.get("endpoint", "/")
     risk = context.get("risk", 0.0)
+
+    # If heavily distributed or rate flooded, protect the endpoint
+    if risk > 0.8 and action in ("block", "rate_limit") and endpoint != "/":
+        rate_limited_endpoints[endpoint] = {
+            "limit": 50, # Global endpoint limit
+            "window": 60,
+            "since": time.time()
+        }
+        print(f"[Executor] ENDPOINT RATE LIMITED: {endpoint}")
 
     if action == "block":
         blocked_ips.add(ip)
@@ -52,6 +62,16 @@ def is_rate_limited(ip: str) -> bool:
     return True
 
 
+def is_endpoint_under_attack(endpoint: str) -> bool:
+    if endpoint not in rate_limited_endpoints:
+        return False
+    entry = rate_limited_endpoints[endpoint]
+    if time.time() - entry["since"] > entry["window"]:
+        del rate_limited_endpoints[endpoint]
+        return False
+    return True
+
+
 def is_token_revoked(token: str) -> bool:
     return token in revoked_tokens
 
@@ -62,5 +82,6 @@ def get_enforcement_state() -> dict:
         "rate_limited_ips": {
             k: v for k, v in rate_limited_ips.items()
         },
-        "revoked_tokens_count": len(revoked_tokens)
+        "revoked_tokens_count": len(revoked_tokens),
+        "rate_limited_endpoints": list(rate_limited_endpoints.keys())
     }
