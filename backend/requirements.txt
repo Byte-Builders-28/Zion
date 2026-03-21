@@ -7,3 +7,4 @@ numpy
 scikit-learn
 py-algorand-sdk
 python-dotenv
+aiohttp
