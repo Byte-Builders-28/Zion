@@ -6,9 +6,9 @@ const vectors = [
   { id: 'rate_flood',   label: 'RATE FLOOD',         icon: '🌊', desc: 'Flood API endpoints with high-speed repeated requests', cls: 'blue' },
   { id: 'token_replay', label: 'TOKEN REPLAY',        icon: '🔁', desc: 'Reuse captured JWT/session tokens to hijack sessions', cls: '' },
   { id: 'cred_stuff',  label: 'CREDENTIAL STUFFING', icon: '🔑', desc: 'Use leaked credential lists to attempt account takeover', cls: 'red' },
-  { id: 'sql_inject',  label: 'SQL INJECTION',        icon: '💉', desc: 'Probe endpoints for SQL injection vulnerabilities', cls: 'yellow' },
-  { id: 'ddos',        label: 'DDoS SIM',             icon: '💥', desc: 'Distributed denial-of-service attack simulation', cls: 'red' },
-  { id: 'xpath',       label: 'XPATH PROBE',          icon: '🔍', desc: 'Test for XPath injection via query parameters', cls: 'blue' },
+  { id: 'ddos',        label: 'DDoS SIM',             icon: '�', desc: 'Distributed denial-of-service attack simulation', cls: 'red' },
+  { id: 'endpoint_scrape', label: 'ENDPOINT SCRAPE',    icon: '�', desc: 'Discover and enumerate API endpoints', cls: 'blue' },
+  { id: 'param_fuzzing', label: 'PARAM FUZZING',       icon: '🎯', desc: 'Test parameters for injection vulnerabilities', cls: 'yellow' }
 ];
 
 const Simulation = () => {
@@ -94,26 +94,51 @@ const Simulation = () => {
     try {
       const backendUrl = config.BACKEND_BASE_URL;
       let endpoint = '';
+      let requestBody = {};
       
       // Map vector IDs to API endpoints
       switch (vectorId) {
-        case 'ddos':
-          endpoint = '/simulate/ddos';
-          break;
-        case 'cred_stuff':
-          endpoint = '/simulate/credit';
+        case 'rate_flood':
+          endpoint = '/simulate/rate_flood';
+          requestBody = { target: 'http://127.0.0.1:8000/test' };
           break;
         case 'token_replay':
           endpoint = '/simulate/token';
+          requestBody = { target: 'http://127.0.0.1:8000/test' };
           break;
-        case 'sql_inject':
-          endpoint = '/simulate/param';
+        case 'cred_stuff':
+          endpoint = '/simulate/credit';
+          requestBody = { target: 'http://127.0.0.1:8000/login' };
           break;
-        case 'xpath':
+        case 'ddos':
+          endpoint = '/simulate/ddos';
+          requestBody = { target: 'http://127.0.0.1:8000/test' };
+          break;
+        case 'endpoint_scrape':
           endpoint = '/simulate/endpoint';
+          requestBody = { 
+            base: 'http://127.0.0.1:8000',
+            total_requests: 250,
+            unique_endpoints: 50,
+            concurrency: 16,
+            spoofed_ip: '198.51.100.10',
+            timeout_s: 2.5
+          };
+          break;
+        case 'param_fuzzing':
+          endpoint = '/simulate/param';
+          requestBody = { 
+            base: 'http://127.0.0.1:8000',
+            total_requests: 350,
+            mutations: 12,
+            concurrency: 24,
+            spoofed_ip: '198.51.100.20',
+            timeout_s: 2.5
+          };
           break;
         default:
-          endpoint = '/simulate/ddos';
+          endpoint = '/simulate/rate_flood';
+          requestBody = { target: 'http://127.0.0.1:8000/test' };
       }
       
       const response = await fetch(`${backendUrl}${endpoint}`, {
@@ -121,10 +146,11 @@ const Simulation = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          target: 'http://127.0.0.1:8000/test'
-        })
+        body: JSON.stringify(requestBody)
       });
+      
+      // Connect to WebSocket after API call to show logs
+      connectTerminalWebSocket(vectorId);
       
       if (response.ok) {
         const result = await response.json();
