@@ -73,7 +73,13 @@ const Simulation = () => {
           }
           
           // Format log entry for terminal display (same as dashboard)
-          const formattedLog = `${logEntry.method}    ${logEntry.ip}    ${logEntry.status}    [${logEntry.score_result?.threat_type || 'normal'}]`;
+          const formattedLog = {
+            endpoint: logEntry.endpoint || '',
+            method: logEntry.method || '',
+            ip: logEntry.ip || '',
+            status: logEntry.status_code || '',
+            threat: logEntry.score_result?.threat_type || 'normal'
+          };
           setTerminalLogs(prevLogs => [formattedLog, ...prevLogs].slice(0, 50));
           
         } catch (error) {
@@ -346,33 +352,29 @@ const Simulation = () => {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                 {terminalLogs.map((log, index) => {
-                  // Parse log format: "METHOD    IP    STATUS    [THREAT]"
-                  const logParts = log.split('    ');
-                  const method = logParts[0] || '';
-                  const ip = logParts[1] || '';
-                  const status = logParts[2] || '';
-                  const threat = logParts[3] ? logParts[3].replace(/[\[\]]/g, '') : '';
-                  
-                  // Check if it's a connection status log
-                  const isStatusLog = log.includes('CONNECTED') || log.includes('DISCONNECTED') || 
-                                    log.includes('ERROR') || log.includes('EXECUTED') || 
-                                    log.includes('FAILED') || log.includes('API ERROR');
-                  
-                  if (isStatusLog) {
-                    return (
-                      <div key={index} style={{ 
-                        color: log.includes('CONNECTED') ? '#0f0' : 
-                               log.includes('DISCONNECTED') ? '#fa0' : 
-                               log.includes('ERROR') || log.includes('FAILED') || log.includes('API ERROR') ? '#f55' : '#0f0',
-                        padding: '0.2rem 0',
-                        borderBottom: '1px solid rgba(0,255,0,0.1)',
-                        textAlign: 'center'
-                      }}>
-                        {log}
-                      </div>
-                    );
+                  // Handle plain string status logs
+                  if (typeof log === 'string') {
+                    const isStatusLog = log.includes('CONNECTED') || log.includes('DISCONNECTED') || 
+                                      log.includes('ERROR') || log.includes('EXECUTED') || 
+                                      log.includes('FAILED') || log.includes('API ERROR');
+                    
+                    if (isStatusLog) {
+                      return (
+                        <div key={index} style={{ 
+                          color: log.includes('CONNECTED') ? '#0f0' : 
+                                 log.includes('DISCONNECTED') ? '#fa0' : 
+                                 log.includes('ERROR') || log.includes('FAILED') || log.includes('API ERROR') ? '#f55' : '#0f0',
+                          padding: '0.2rem 0',
+                          borderBottom: '1px solid rgba(0,255,0,0.1)',
+                          textAlign: 'center'
+                        }}>
+                          {log}
+                        </div>
+                      );
+                    }
                   }
                   
+                  // Handle object request logs exactly like Dashboard.jsx
                   return (
                     <div key={index} style={{ 
                       display: 'flex', 
@@ -382,28 +384,28 @@ const Simulation = () => {
                       borderBottom: index < terminalLogs.length - 1 ? '1px solid rgba(0,255,0,0.1)' : 'none'
                     }}>
                       <span style={{ color: '#0f0', minWidth: '60px' }}>
-                        {method}
+                        {log.method}
                       </span>
                       <span style={{ color: '#0af', minWidth: '120px' }}>
-                        {ip}
+                        {log.ip}
                       </span>
                       <span style={{ color: '#fa0', minWidth: '200px', flex: 1 }}>
-                        /api/v1/simulation
+                        {log.endpoint}
                       </span>
                       <span style={{ 
-                        color: status === '200' ? '#0f0' : status >= '400' ? '#f55' : '#fa0',
+                        color: log.status === 200 || log.status === '200' ? '#0f0' : log.status >= 400 ? '#f55' : '#fa0',
                         minWidth: '40px',
                         textAlign: 'right'
                       }}>
-                        {status}
+                        {log.status}
                       </span>
                       <span style={{ 
-                        color: threat === 'normal' ? '#0f0' : '#f55',
+                        color: log.threat === 'normal' ? '#0f0' : '#f55',
                         minWidth: '80px',
                         textAlign: 'right',
                         fontSize: '0.7rem'
                       }}>
-                        [{threat}]
+                        [{log.threat}]
                       </span>
                     </div>
                   );
