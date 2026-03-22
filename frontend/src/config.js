@@ -1,7 +1,7 @@
 // Global configuration for ZION frontend
 const config = {
   // Backend server base URL - will be set dynamically
-  BACKEND_BASE_URL: 'https://zion-b5p9.onrender.com',
+  BACKEND_BASE_URL: 'http://localhost:8000', // Default value, will be overridden by environment variable if set
   
   // API endpoints
   API_ENDPOINTS: {

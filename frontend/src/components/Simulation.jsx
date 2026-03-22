@@ -102,6 +102,7 @@ const Simulation = () => {
       const backendUrl = config.BACKEND_BASE_URL;
       let endpoint = '';
       let requestBody = {};
+      let url = '';
       
       // Map vector IDs to API endpoints
       switch (vectorId) {
