@@ -8,7 +8,7 @@ const vectors = [
   { id: 'cred_stuff',  label: 'CREDENTIAL STUFFING', icon: '🔑', desc: 'Use leaked credential lists to attempt account takeover', cls: 'red' },
   { id: 'sql_inject',  label: 'SQL INJECTION',        icon: '💉', desc: 'Probe endpoints for SQL injection vulnerabilities', cls: 'yellow' },
   { id: 'ddos',        label: 'DDoS SIM',             icon: '💥', desc: 'Distributed denial-of-service attack simulation', cls: 'red' },
-  { id: 'xpath',       label: 'XPATH PROBE',          icon: '🔍', desc: 'Test for XPath injection via query parameters', cls: 'blue' },
+  { id: 'endpoint_scrape', label: 'ENDPOINT SCRAPING', icon: '🔍', desc: 'Enumerate many routes to map exposed endpoints', cls: 'blue' },
 ];
 
 const Simulation = () => {
@@ -50,7 +50,7 @@ const Simulation = () => {
   }, []);
 
   // Terminal WebSocket connection
-  const connectTerminalWebSocket = (attackType) => {
+  const connectTerminalWebSocket = (attackType, attackLabel) => {
     try {
       const backendUrl = config.BACKEND_BASE_URL;
       const wsUrl = backendUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/dashboard/logs';
@@ -58,12 +58,19 @@ const Simulation = () => {
       
       wsRef.current.onopen = () => {
         console.log('Terminal WebSocket connected');
-        setTerminalLogs([`[${new Date().toLocaleTimeString()}] CONNECTED TO TERMINAL - DOING ${attackType.toUpperCase()} SIMULATION`]);
+        const label = attackLabel || attackType;
+        setTerminalLogs([`[${new Date().toLocaleTimeString()}] CONNECTED TO TERMINAL — VECTOR: ${label}`]);
       };
       
       wsRef.current.onmessage = (event) => {
         try {
           const logEntry = JSON.parse(event.data);
+          
+          // Filter out noisy paths
+          const ignorePaths = ['/dashboard/stats', '/openapi.json', '/docs', '/favicon.ico', '/'];
+          if (logEntry?.method === 'GET' && ignorePaths.includes(logEntry?.endpoint)) {
+            return;
+          }
           
           // Format log entry for terminal display (same as dashboard)
           const formattedLog = `${logEntry.method}    ${logEntry.ip}    ${logEntry.status}    [${logEntry.score_result?.threat_type || 'normal'}]`;
@@ -90,15 +97,19 @@ const Simulation = () => {
   };
 
   // Call simulation API endpoints
-  const callSimulationAPI = async (vectorId) => {
+  const callSimulationAPI = async (vectorId, vectorLabel) => {
     try {
       const backendUrl = config.BACKEND_BASE_URL;
       let endpoint = '';
+      let url = '';
       
       // Map vector IDs to API endpoints
       switch (vectorId) {
         case 'ddos':
           endpoint = '/simulate/ddos';
+          break;
+        case 'rate_flood':
+          endpoint = '/simulate/rate_flood';
           break;
         case 'cred_stuff':
           endpoint = '/simulate/credit';
@@ -109,26 +120,29 @@ const Simulation = () => {
         case 'sql_inject':
           endpoint = '/simulate/param';
           break;
-        case 'xpath':
+        case 'endpoint_scrape':
           endpoint = '/simulate/endpoint';
           break;
         default:
           endpoint = '/simulate/ddos';
       }
+
+      // Build URL with query params (backend expects query params, not JSON body).
+      if (endpoint === '/simulate/param' || endpoint === '/simulate/endpoint') {
+        url = `${backendUrl}${endpoint}?base=${encodeURIComponent('http://127.0.0.1:8000')}`;
+      } else if (endpoint === '/simulate/credit') {
+        url = `${backendUrl}${endpoint}?target=${encodeURIComponent('http://127.0.0.1:8000/login')}`;
+      } else {
+        url = `${backendUrl}${endpoint}?target=${encodeURIComponent('http://127.0.0.1:8000/test')}`;
+      }
       
-      const response = await fetch(`${backendUrl}${endpoint}`, {
+      const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          target: 'http://127.0.0.1:8000/test'
-        })
       });
       
       if (response.ok) {
         const result = await response.json();
-        setTerminalLogs(prevLogs => [...prevLogs, `[${new Date().toLocaleTimeString()}] ✓ SIMULATION EXECUTED: ${result.msg}`]);
+        setTerminalLogs(prevLogs => [...prevLogs, `[${new Date().toLocaleTimeString()}] ✓ SIMULATION EXECUTED (${vectorLabel || vectorId}): ${result.msg}`]);
       } else {
         setTerminalLogs(prevLogs => [...prevLogs, `[${new Date().toLocaleTimeString()}] ⚠️ SIMULATION FAILED: HTTP ${response.status}`]);
       }
@@ -220,10 +234,10 @@ const Simulation = () => {
     setLogs([]); // Clear logs for new run
     
     // Connect to WebSocket for real-time logs
-    connectTerminalWebSocket(v.id);
+    connectTerminalWebSocket(v.id, v.label);
     
     // Call the simulation API to trigger the attack
-    callSimulationAPI(v.id);
+    callSimulationAPI(v.id, v.label);
   };
 
   return (

@@ -37,6 +37,14 @@ const Dashboard = () => {
         wsRef.current.onmessage = (event) => {
           try {
             const logData = JSON.parse(event.data);
+            
+            // Ignore internal polling noise (this dashboard itself hits /dashboard/stats every few seconds).
+            // Also ignore general setup noise like docs and favicon.
+            const ignorePaths = ['/dashboard/stats', '/openapi.json', '/docs', '/favicon.ico', '/'];
+            if (logData?.method === 'GET' && ignorePaths.includes(logData?.endpoint)) {
+              return;
+            }
+
             console.log('Received terminal log entry:', logData);
 
             

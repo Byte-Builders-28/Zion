@@ -102,10 +102,18 @@ async def interceptor(request: Request, call_next):
     # ── Enforcement gate — runs BEFORE processing request ──
     endpoint_path = request.url.path
 
+    # Never rate-limit dashboard visibility endpoints; otherwise you can lock
+    # yourself out of viewing logs/stats after running simulations.
+    bypass_rate_limit = (
+        request.method == "OPTIONS"
+        or endpoint_path.startswith("/dashboard")
+        or endpoint_path in {"/docs", "/openapi.json", "/redoc"}
+    )
+
     if is_blocked(ip):
         return JSONResponse(status_code=403, content={"detail": "IP blocked by Zion security policy"})
 
-    if is_rate_limited(ip):
+    if (not bypass_rate_limit) and is_rate_limited(ip):
         return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded — try again later"})
 
     if token and is_token_revoked(token):
