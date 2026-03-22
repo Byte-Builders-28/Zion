@@ -9,7 +9,12 @@ router = APIRouter(prefix="/simulate", tags=["Simulation"])
 
 @router.post("/ddos")
 async def simulate_ddos(target: str = "http://127.0.0.1:8000/test"):
-    await rate_abuse.run_simulation(url=target)
+    await rate_abuse.run_simulation(url=target, type="ddos")
+    return {"msg": "executed"}
+
+@router.post("/rate_flood")
+async def simulate_rate_flood(target: str = "http://127.0.0.1:8000/test"):
+    await rate_abuse.run_simulation(url=target, type="rate_flood")
     return {"msg": "executed"}
 
 

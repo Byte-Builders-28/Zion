@@ -14,7 +14,7 @@ def generate_fake_ip():
     return f"192.168.{random.randint(0, 255)}.{random.randint(1, 254)}"
 
 
-async def flood_worker(session, url):
+async def flood_worker(session,type = "rate_flood", url = "http://localhost:8000/test"):
     global total_requests, success_requests, failed_requests, stop
 
     while not stop:
@@ -22,9 +22,12 @@ async def flood_worker(session, url):
         rate = random.choice([20, 50, 100, 300, 800])
         interval = 1.0 / rate if rate > 0 else 0
 
-        headers = {
-            "X-Forwarded-For": generate_fake_ip()
-        }
+        if type == "ddos":
+            headers = {
+                "X-Forwarded-For": generate_fake_ip()
+            }
+        else:
+            headers = {}
 
         try:
             async with session.get(url, headers=headers, timeout=0.5) as resp:
@@ -57,7 +60,7 @@ async def metrics_printer():
             f"[Stats] RPS: {rps} | Total: {total_requests} | Success: {success_requests} | Fail: {failed_requests}")
 
 
-async def run_simulation(url, workers=200, duration=30):
+async def run_simulation(url, type = "rate_flood", workers=200, duration=30):
     global stop
 
     connector = aiohttp.TCPConnector(limit=0)  # unlimited connections
@@ -67,7 +70,7 @@ async def run_simulation(url, workers=200, duration=30):
 
         # Start workers
         for _ in range(workers):
-            tasks.append(asyncio.create_task(flood_worker(session, url)))
+            tasks.append(asyncio.create_task(flood_worker(session,type, url)))
 
         # Start metrics logger
         tasks.append(asyncio.create_task(metrics_printer()))
