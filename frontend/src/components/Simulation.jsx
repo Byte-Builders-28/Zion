@@ -6,9 +6,9 @@ const vectors = [
   { id: 'rate_flood',   label: 'RATE FLOOD',         icon: '🌊', desc: 'Flood API endpoints with high-speed repeated requests', cls: 'blue' },
   { id: 'token_replay', label: 'TOKEN REPLAY',        icon: '🔁', desc: 'Reuse captured JWT/session tokens to hijack sessions', cls: '' },
   { id: 'cred_stuff',  label: 'CREDENTIAL STUFFING', icon: '🔑', desc: 'Use leaked credential lists to attempt account takeover', cls: 'red' },
-  { id: 'sql_inject',  label: 'SQL INJECTION',        icon: '💉', desc: 'Probe endpoints for SQL injection vulnerabilities', cls: 'yellow' },
-  { id: 'ddos',        label: 'DDoS SIM',             icon: '💥', desc: 'Distributed denial-of-service attack simulation', cls: 'red' },
-  { id: 'endpoint_scrape', label: 'ENDPOINT SCRAPING', icon: '🔍', desc: 'Enumerate many routes to map exposed endpoints', cls: 'blue' },
+  { id: 'ddos',        label: 'DDoS SIM',             icon: '�', desc: 'Distributed denial-of-service attack simulation', cls: 'red' },
+  { id: 'endpoint_scrape', label: 'ENDPOINT SCRAPE',    icon: '�', desc: 'Discover and enumerate API endpoints', cls: 'blue' },
+  { id: 'param_fuzzing', label: 'PARAM FUZZING',       icon: '🎯', desc: 'Test parameters for injection vulnerabilities', cls: 'yellow' }
 ];
 
 const Simulation = () => {
@@ -101,30 +101,51 @@ const Simulation = () => {
     try {
       const backendUrl = config.BACKEND_BASE_URL;
       let endpoint = '';
-      let url = '';
+      let requestBody = {};
       
       // Map vector IDs to API endpoints
       switch (vectorId) {
-        case 'ddos':
-          endpoint = '/simulate/ddos';
-          break;
         case 'rate_flood':
           endpoint = '/simulate/rate_flood';
-          break;
-        case 'cred_stuff':
-          endpoint = '/simulate/credit';
+          requestBody = { target: 'http://127.0.0.1:8000/test' };
           break;
         case 'token_replay':
           endpoint = '/simulate/token';
+          requestBody = { target: 'http://127.0.0.1:8000/test' };
           break;
-        case 'sql_inject':
-          endpoint = '/simulate/param';
+        case 'cred_stuff':
+          endpoint = '/simulate/credit';
+          requestBody = { target: 'http://127.0.0.1:8000/login' };
+          break;
+        case 'ddos':
+          endpoint = '/simulate/ddos';
+          requestBody = { target: 'http://127.0.0.1:8000/test' };
           break;
         case 'endpoint_scrape':
           endpoint = '/simulate/endpoint';
+          requestBody = { 
+            base: 'http://127.0.0.1:8000',
+            total_requests: 250,
+            unique_endpoints: 50,
+            concurrency: 16,
+            spoofed_ip: '198.51.100.10',
+            timeout_s: 2.5
+          };
+          break;
+        case 'param_fuzzing':
+          endpoint = '/simulate/param';
+          requestBody = { 
+            base: 'http://127.0.0.1:8000',
+            total_requests: 350,
+            mutations: 12,
+            concurrency: 24,
+            spoofed_ip: '198.51.100.20',
+            timeout_s: 2.5
+          };
           break;
         default:
-          endpoint = '/simulate/ddos';
+          endpoint = '/simulate/rate_flood';
+          requestBody = { target: 'http://127.0.0.1:8000/test' };
       }
 
       // Build URL with query params (backend expects query params, not JSON body).
@@ -138,7 +159,14 @@ const Simulation = () => {
       
       const response = await fetch(url, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
       });
+      
+      // Connect to WebSocket after API call to show logs
+      connectTerminalWebSocket(vectorId);
       
       if (response.ok) {
         const result = await response.json();
@@ -300,18 +328,86 @@ const Simulation = () => {
         {/* Simulation console */}
         <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', marginTop: '1.5rem' }}>
           <div className="panel-title">SIMULATION CONSOLE</div>
-          <div style={{ fontFamily: 'Share Tech Mono', fontSize: '0.72rem', display: 'flex', flexDirection: 'column', gap: '0.3rem', overflowY: 'auto', flex: 1, maxHeight: '320px' }}>
+          <div style={{ 
+            height: '320px', 
+            overflowY: 'auto',
+            padding: '1rem',
+            fontFamily: 'Share Tech Mono', 
+            fontSize: '0.78rem', 
+            color: 'rgba(0,255,0,0.35)', 
+            letterSpacing: '2px'
+          }} 
+          className="traffic-scrollbar">
             {terminalLogs.length === 0 ? (
-              <span style={{ color: 'rgba(0,255,0,0.3)', marginTop: '1rem' }}>{'>'} SELECT A VECTOR TO BEGIN SIMULATION...</span>
+              <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                [ SELECT ATTACK VECTOR TO BEGIN SIMULATION... ]
+              </div>
             ) : (
-              terminalLogs.map((log, i) => {
-                let color = 'rgba(0, 255, 0, 0.6)'; // default green
-                if (log.includes('CONNECTED')) color = '#0f0';
-                if (log.includes('DISCONNECTED')) color = '#fa0';
-                if (log.includes('ERROR')) color = '#f55';
-                if (log.includes('POST') || log.includes('GET')) color = 'rgba(255, 255, 255, 0.7)';
-                return <div key={i} style={{ color }}>{log}</div>;
-              })
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                {terminalLogs.map((log, index) => {
+                  // Parse log format: "METHOD    IP    STATUS    [THREAT]"
+                  const logParts = log.split('    ');
+                  const method = logParts[0] || '';
+                  const ip = logParts[1] || '';
+                  const status = logParts[2] || '';
+                  const threat = logParts[3] ? logParts[3].replace(/[\[\]]/g, '') : '';
+                  
+                  // Check if it's a connection status log
+                  const isStatusLog = log.includes('CONNECTED') || log.includes('DISCONNECTED') || 
+                                    log.includes('ERROR') || log.includes('EXECUTED') || 
+                                    log.includes('FAILED') || log.includes('API ERROR');
+                  
+                  if (isStatusLog) {
+                    return (
+                      <div key={index} style={{ 
+                        color: log.includes('CONNECTED') ? '#0f0' : 
+                               log.includes('DISCONNECTED') ? '#fa0' : 
+                               log.includes('ERROR') || log.includes('FAILED') || log.includes('API ERROR') ? '#f55' : '#0f0',
+                        padding: '0.2rem 0',
+                        borderBottom: '1px solid rgba(0,255,0,0.1)',
+                        textAlign: 'center'
+                      }}>
+                        {log}
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div key={index} style={{ 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.2rem 0',
+                      borderBottom: index < terminalLogs.length - 1 ? '1px solid rgba(0,255,0,0.1)' : 'none'
+                    }}>
+                      <span style={{ color: '#0f0', minWidth: '60px' }}>
+                        {method}
+                      </span>
+                      <span style={{ color: '#0af', minWidth: '120px' }}>
+                        {ip}
+                      </span>
+                      <span style={{ color: '#fa0', minWidth: '200px', flex: 1 }}>
+                        /api/v1/simulation
+                      </span>
+                      <span style={{ 
+                        color: status === '200' ? '#0f0' : status >= '400' ? '#f55' : '#fa0',
+                        minWidth: '40px',
+                        textAlign: 'right'
+                      }}>
+                        {status}
+                      </span>
+                      <span style={{ 
+                        color: threat === 'normal' ? '#0f0' : '#f55',
+                        minWidth: '80px',
+                        textAlign: 'right',
+                        fontSize: '0.7rem'
+                      }}>
+                        [{threat}]
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
           {active && (
