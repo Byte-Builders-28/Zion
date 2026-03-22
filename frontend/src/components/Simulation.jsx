@@ -89,6 +89,55 @@ const Simulation = () => {
     }
   };
 
+  // Call simulation API endpoints
+  const callSimulationAPI = async (vectorId) => {
+    try {
+      const backendUrl = config.BACKEND_BASE_URL;
+      let endpoint = '';
+      
+      // Map vector IDs to API endpoints
+      switch (vectorId) {
+        case 'ddos':
+          endpoint = '/simulate/ddos';
+          break;
+        case 'cred_stuff':
+          endpoint = '/simulate/credit';
+          break;
+        case 'token_replay':
+          endpoint = '/simulate/token';
+          break;
+        case 'sql_inject':
+          endpoint = '/simulate/param';
+          break;
+        case 'xpath':
+          endpoint = '/simulate/endpoint';
+          break;
+        default:
+          endpoint = '/simulate/ddos';
+      }
+      
+      const response = await fetch(`${backendUrl}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          target: 'http://127.0.0.1:8000/test'
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setTerminalLogs(prevLogs => [...prevLogs, `[${new Date().toLocaleTimeString()}] ✓ SIMULATION EXECUTED: ${result.msg}`]);
+      } else {
+        setTerminalLogs(prevLogs => [...prevLogs, `[${new Date().toLocaleTimeString()}] ⚠️ SIMULATION FAILED: HTTP ${response.status}`]);
+      }
+    } catch (error) {
+      console.error('Failed to call simulation API:', error);
+      setTerminalLogs(prevLogs => [...prevLogs, `[${new Date().toLocaleTimeString()}] ⛔ API ERROR: ${error.message}`]);
+    }
+  };
+
   // Calculate risk score based on dashboard metrics (0 to 1)
   const calculateRiskScore = (data) => {
     const totalThreats = data.total_threats || 0;
@@ -170,8 +219,11 @@ const Simulation = () => {
     setActive(v.id);
     setLogs([]); // Clear logs for new run
     
-    // Connect to WebSocket and display real logs instead of simulation
+    // Connect to WebSocket for real-time logs
     connectTerminalWebSocket(v.id);
+    
+    // Call the simulation API to trigger the attack
+    callSimulationAPI(v.id);
   };
 
   return (
